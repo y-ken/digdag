@@ -4,11 +4,6 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,19 +17,18 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Consumer;
 
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
 public class TemporaryDigdagServer
-        implements TestRule
 {
     private static final Logger log = LoggerFactory.getLogger(TemporaryDigdagServer.class);
 
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
 
-    private final TemporaryFolder temporaryFolder = new TemporaryFolder();
     private final Version version;
 
     private final String host;
@@ -42,9 +36,9 @@ public class TemporaryDigdagServer
     private final String endpoint;
 
     private final ExecutorService executor;
+    private final String configuration;
 
-    private Path configDirectory;
-    private Path config;
+    private Path configFile;
     private Path taskLog;
     private Path accessLog;
 
@@ -55,46 +49,19 @@ public class TemporaryDigdagServer
         this.host = "localhost";
         this.port = 65432;
         this.endpoint = "http://" + host + ":" + port;
+        this.configuration = builder.configuration;
 
         this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
     }
 
-    @Override
-    public Statement apply(Statement base, Description description)
-    {
-        return RuleChain
-                .outerRule(temporaryFolder)
-                .around(this::statement)
-                .apply(base, description);
-    }
-
-    private Statement statement(Statement statement, Description description)
-    {
-        return new Statement()
-        {
-            @Override
-            public void evaluate()
-                    throws Throwable
-            {
-                before();
-                try {
-                    statement.evaluate();
-                }
-                finally {
-                    after();
-                }
-            }
-        };
-    }
-
-    private void before()
+    void start(Path workdir)
             throws Throwable
     {
         try {
-            this.configDirectory = temporaryFolder.newFolder().toPath();
-            this.taskLog = temporaryFolder.newFolder().toPath();
-            this.accessLog = temporaryFolder.newFolder().toPath();
-            this.config = Files.createFile(configDirectory.resolve("config"));
+            this.taskLog = Files.createTempDirectory(workdir, "task-log");
+            this.accessLog = Files.createTempDirectory(workdir, "access-log");
+            this.configFile = Files.createFile(workdir.resolve("config"));
+            Files.write(configFile, configuration.getBytes("UTF-8"));
         }
         catch (IOException e) {
             throw Throwables.propagate(e);
@@ -106,7 +73,7 @@ public class TemporaryDigdagServer
                 "-m",
                 "--task-log", taskLog.toString(),
                 "--access-log", accessLog.toString(),
-                "-c", config.toString()));
+                "-c", configFile.toString()));
 
         // Poll and wait for server to come up
         for (int i = 0; i < 30; i++) {
@@ -126,8 +93,7 @@ public class TemporaryDigdagServer
         }
     }
 
-    private void after()
-    {
+    void stop() {
         executor.shutdownNow();
     }
 
@@ -151,23 +117,22 @@ public class TemporaryDigdagServer
         return port;
     }
 
-    public static TemporaryDigdagServer of()
-    {
-        return builder().build();
-    }
-
-    public static TemporaryDigdagServer of(Version version)
-    {
-        return builder().version(version).build();
-    }
-
     public static class Builder
     {
-        private Builder()
-        {
-        }
+        private final Consumer<TemporaryDigdagServer> consumer;
 
         private Version version = Version.buildVersion();
+        private String configuration = "";
+
+        public Builder()
+        {
+            this.consumer = null;
+        }
+
+        public Builder(Consumer<TemporaryDigdagServer> consumer)
+        {
+            this.consumer = consumer;
+        }
 
         public Builder version(Version version)
         {
@@ -175,9 +140,18 @@ public class TemporaryDigdagServer
             return this;
         }
 
+        public Builder configuration(String configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
         TemporaryDigdagServer build()
         {
-            return new TemporaryDigdagServer(this);
+            TemporaryDigdagServer server = new TemporaryDigdagServer(this);
+            if (consumer != null) {
+                consumer.accept(server);
+            }
+            return server;
         }
     }
 

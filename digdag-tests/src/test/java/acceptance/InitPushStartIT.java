@@ -35,7 +35,9 @@ public class InitPushStartIT
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of();
+    public TemporaryDigdagServers servers = TemporaryDigdagServers.create();
+
+    TemporaryDigdagServer server = servers.server().build();
 
     private Path config;
     private Path projectDir;
