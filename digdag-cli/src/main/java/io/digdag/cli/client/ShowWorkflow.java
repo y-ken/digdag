@@ -17,9 +17,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowWorkflow
     extends ClientCommand
 {
-    public ShowWorkflow(Version version, PrintStream out, PrintStream err, Environment environment)
+    public ShowWorkflow(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

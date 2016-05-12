@@ -15,9 +15,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowSchedule
     extends ClientCommand
 {
-    public ShowSchedule(Version version, PrintStream out, PrintStream err, Environment environment)
+    public ShowSchedule(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

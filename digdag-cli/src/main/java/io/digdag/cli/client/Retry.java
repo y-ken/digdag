@@ -49,9 +49,9 @@ public class Retry
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
 
-    public Retry(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Retry(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

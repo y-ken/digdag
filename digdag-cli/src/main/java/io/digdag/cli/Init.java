@@ -16,9 +16,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Init
     extends Command
 {
-    public Init(PrintStream out, PrintStream err, Environment environment)
+    public Init(Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
     }
 
     @Override

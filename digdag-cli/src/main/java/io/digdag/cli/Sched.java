@@ -51,9 +51,9 @@ public class Sched
 
     // TODO no-schedule mode
 
-    public Sched(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Sched(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

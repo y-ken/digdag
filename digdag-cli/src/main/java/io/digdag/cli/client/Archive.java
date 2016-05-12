@@ -41,9 +41,9 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
-    public Archive(PrintStream out, PrintStream err, Environment environment)
+    public Archive(Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
     }
 
     @Override

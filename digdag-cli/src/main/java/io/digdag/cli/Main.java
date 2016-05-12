@@ -46,11 +46,11 @@ public class Main
     private final PrintStream err;
     private final Environment environment;
 
-    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err, Environment environment)
+    public Main(io.digdag.core.Version version, Environment environment)
     {
         this.version = version;
-        this.out = out;
-        this.err = err;
+        this.out = environment.out();
+        this.err = environment.err();
         this.environment = environment;
     }
 
@@ -62,7 +62,8 @@ public class Main
 
     public static void main(String... args)
     {
-        int code = new Main(buildVersion(), System.out, System.err, new Environment(System.getenv())).cli(args);
+        Environment environment = new Environment(System.getenv(), System.out, System.err);
+        int code = new Main(buildVersion(), environment).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -80,31 +81,31 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("init", new Init(out, err, environment), "new");
-        jc.addCommand("run", new Run(out, err, environment), "r");
-        jc.addCommand("check", new Check(out, err, environment), "c");
-        jc.addCommand("scheduler", new Sched(version, out, err, environment), "sched");
+        jc.addCommand("init", new Init(environment), "new");
+        jc.addCommand("run", new Run(environment), "r");
+        jc.addCommand("check", new Check(environment), "c");
+        jc.addCommand("scheduler", new Sched(version, environment), "sched");
 
-        jc.addCommand("server", new Server(version, out, err, environment));
+        jc.addCommand("server", new Server(version, environment));
 
-        jc.addCommand("push", new Push(version, out, err, environment));
-        jc.addCommand("archive", new Archive(out, err, environment));
-        jc.addCommand("upload", new Upload(version, out, err, environment));
+        jc.addCommand("push", new Push(version, environment));
+        jc.addCommand("archive", new Archive(environment));
+        jc.addCommand("upload", new Upload(version, environment));
 
-        jc.addCommand("workflow", new ShowWorkflow(version, out, err, environment), "workflows");
-        jc.addCommand("start", new Start(version, out, err, environment));
-        jc.addCommand("retry", new Retry(version, out, err, environment));
-        jc.addCommand("session", new ShowSession(version, out, err, environment), "sessions");
-        jc.addCommand("atteempt", new ShowAttempt(version, out, err, environment), "attempts");
-        jc.addCommand("reschedule", new Reschedule(version, out, err, environment));
-        jc.addCommand("backfill", new Backfill(version, out, err, environment));
-        jc.addCommand("log", new ShowLog(version, out, err, environment), "logs");
-        jc.addCommand("kill", new Kill(version, out, err, environment));
-        jc.addCommand("task", new ShowTask(version, out, err, environment), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(version, out, err, environment), "schedules");
-        jc.addCommand("version", new Version(version, out, err, environment), "version");
+        jc.addCommand("workflow", new ShowWorkflow(version, environment), "workflows");
+        jc.addCommand("start", new Start(version, environment));
+        jc.addCommand("retry", new Retry(version, environment));
+        jc.addCommand("session", new ShowSession(version, environment), "sessions");
+        jc.addCommand("atteempt", new ShowAttempt(version, environment), "attempts");
+        jc.addCommand("reschedule", new Reschedule(version, environment));
+        jc.addCommand("backfill", new Backfill(version, environment));
+        jc.addCommand("log", new ShowLog(version, environment), "logs");
+        jc.addCommand("kill", new Kill(version, environment));
+        jc.addCommand("task", new ShowTask(version, environment), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(version, environment), "schedules");
+        jc.addCommand("version", new Version(version, environment), "version");
 
-        jc.addCommand("selfupdate", new SelfUpdate(out, err, environment));
+        jc.addCommand("selfupdate", new SelfUpdate(environment));
 
         try {
             try {

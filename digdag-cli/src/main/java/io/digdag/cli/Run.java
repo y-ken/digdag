@@ -130,9 +130,9 @@ public class Run
 
     private Path resumeStatePath;
 
-    public Run(PrintStream out, PrintStream err, Environment environment)
+    public Run(Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
     }
 
     @Override

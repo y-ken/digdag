@@ -38,9 +38,9 @@ public abstract class ClientCommand
     @Parameter(names = {"--disable-version-check"})
     protected boolean disableVersionCheck;
 
-    public ClientCommand(Version localVersion, PrintStream out, PrintStream err, Environment environment)
+    public ClientCommand(Version localVersion, Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
         this.localVersion = Objects.requireNonNull(localVersion, "localVersion");
     }
 

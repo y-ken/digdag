@@ -29,9 +29,9 @@ public class Reschedule
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Reschedule(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Reschedule(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

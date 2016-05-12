@@ -13,9 +13,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowTask
     extends ClientCommand
 {
-    public ShowTask(Version version, PrintStream out, PrintStream err, Environment environment)
+    public ShowTask(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

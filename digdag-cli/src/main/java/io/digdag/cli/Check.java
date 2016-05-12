@@ -55,9 +55,9 @@ public class Check
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
 
-    public Check(PrintStream out, PrintStream err, Environment environment)
+    public Check(Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
     }
 
     @Override

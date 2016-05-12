@@ -19,9 +19,9 @@ public class Upload
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Upload(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Upload(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

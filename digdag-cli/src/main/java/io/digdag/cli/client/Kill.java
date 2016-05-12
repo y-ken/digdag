@@ -12,9 +12,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Kill
     extends ClientCommand
 {
-    public Kill(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Kill(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

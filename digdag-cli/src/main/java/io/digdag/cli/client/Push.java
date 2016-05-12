@@ -43,9 +43,9 @@ public class Push
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Push(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Push(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override
@@ -103,6 +103,6 @@ public class Push
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
-        new Upload(localVersion, out, err, environment).showUploadedProject(proj);
+        new Upload(localVersion, environment).showUploadedProject(proj);
     }
 }

@@ -24,9 +24,9 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
-    public ShowLog(Version version, PrintStream out, PrintStream err, Environment environment)
+    public ShowLog(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

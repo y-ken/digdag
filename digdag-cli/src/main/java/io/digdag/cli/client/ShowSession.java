@@ -21,9 +21,9 @@ public class ShowSession
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
 
-    public ShowSession(Version version, PrintStream out, PrintStream err, Environment environment)
+    public ShowSession(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     // ShowAttempt overrides this method

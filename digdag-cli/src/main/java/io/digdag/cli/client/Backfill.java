@@ -30,9 +30,9 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Backfill(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Backfill(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

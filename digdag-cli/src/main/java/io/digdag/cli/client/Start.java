@@ -52,9 +52,9 @@ public class Start
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Start(Version version, PrintStream out, PrintStream err, Environment environment)
+    public Start(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

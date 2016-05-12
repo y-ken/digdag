@@ -11,9 +11,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Version extends ClientCommand
 {
-    public Version(io.digdag.core.Version version, PrintStream out, PrintStream err, Environment environment)
+    public Version(io.digdag.core.Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

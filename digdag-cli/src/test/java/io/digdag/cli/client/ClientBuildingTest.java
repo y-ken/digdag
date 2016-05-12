@@ -17,7 +17,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), System.out, System.err, new Environment(ImmutableMap.of()));
+        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), new Environment(ImmutableMap.of(), System.out, System.err));
         cmd.endpoint = endpoint;
         DigdagClient client = cmd.buildClient(false);
         Field f = client.getClass().getDeclaredField("endpoint");

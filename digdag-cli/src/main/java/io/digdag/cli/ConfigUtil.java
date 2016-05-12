@@ -12,10 +12,10 @@ class ConfigUtil
 
     private static Path configHome(Environment environment)
     {
-        String configHome = environment.getEnvironmentVariable("XDG_CONFIG_HOME");
+        String configHome = environment.environmentVariable("XDG_CONFIG_HOME");
         if (configHome != null) {
             return Paths.get(configHome);
         }
-        return Paths.get(environment.getProperty("user.home"), ".config");
+        return Paths.get(environment.systemProperty("user.home"), ".config");
     }
 }

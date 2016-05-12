@@ -42,10 +42,10 @@ public abstract class Command
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
 
-    protected Command(PrintStream out, PrintStream err, Environment environment)
+    protected Command(Environment environment)
     {
-        this.out = out;
-        this.err = err;
+        this.out = environment.out();
+        this.err = environment.err();
         this.environment = environment;
     }
 

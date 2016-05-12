@@ -8,9 +8,9 @@ import java.io.PrintStream;
 public class ShowAttempt
     extends ShowSession
 {
-    public ShowAttempt(Version version, PrintStream out, PrintStream err, Environment environment)
+    public ShowAttempt(Version version, Environment environment)
     {
-        super(version, out, err, environment);
+        super(version, environment);
     }
 
     @Override

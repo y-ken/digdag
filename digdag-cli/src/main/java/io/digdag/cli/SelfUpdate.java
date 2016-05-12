@@ -28,9 +28,9 @@ public class SelfUpdate
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
-    public SelfUpdate(PrintStream out, PrintStream err, Environment environment)
+    public SelfUpdate(Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
     }
 
     @Override

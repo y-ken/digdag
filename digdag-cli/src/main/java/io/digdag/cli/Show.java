@@ -25,7 +25,7 @@ public class Show
 
     public Show(PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
     }
 
     @Override

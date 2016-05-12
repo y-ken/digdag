@@ -36,9 +36,9 @@ public class Server
 
     protected final Version localVersion;
 
-    public Server(Version localVersion, PrintStream out, PrintStream err, Environment environment)
+    public Server(Version localVersion, Environment environment)
     {
-        super(out, err, environment);
+        super(environment);
         this.localVersion = localVersion;
     }
 
