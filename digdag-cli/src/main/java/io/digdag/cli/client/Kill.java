@@ -1,20 +1,18 @@
 package io.digdag.cli.client;
 
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
-
-import java.io.PrintStream;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Kill
     extends ClientCommand
 {
-    public Kill(Version version, Environment environment)
+    public Kill(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -22,12 +20,12 @@ public class Kill
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
         kill(parseLongOrUsage(args.get(0)));
     }
 
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag kill <attempt-id>");
         err.println("  Options:");

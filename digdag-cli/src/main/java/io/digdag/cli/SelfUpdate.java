@@ -1,6 +1,5 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.io.Console;
@@ -28,9 +27,9 @@ public class SelfUpdate
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
-    public SelfUpdate(Environment environment)
+    public SelfUpdate(Context ctx)
     {
-        super(environment);
+        super(ctx);
     }
 
     @Override
@@ -45,16 +44,16 @@ public class SelfUpdate
             selfUpdate(args.get(0));
             break;
         default:
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
     }
 
     @Override
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag selfupdate [version]]");
         err.println("  Options:");
-        Main.showCommonOptions(err, environment);
+        Main.showCommonOptions(err, ctx);
         err.println("");
         err.println("  Examples:");
         err.println("    $ digdag selfupdate");

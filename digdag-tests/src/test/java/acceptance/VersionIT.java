@@ -1,5 +1,6 @@
 package acceptance;
 
+import io.digdag.cli.Context;
 import io.digdag.core.Version;
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,11 +20,15 @@ public class VersionIT
 {
     private static final Version REMOTE_VERSION = Version.of("4.5.6");
 
+    private static final Context SERVER_CONTEXT = Context.builder()
+            .version(REMOTE_VERSION)
+            .build();
+
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Rule
-    public TemporaryDigdagServer server = TemporaryDigdagServer.of(REMOTE_VERSION);
+    public TemporaryDigdagServer server = TemporaryDigdagServer.of(SERVER_CONTEXT);
 
     private Path config;
 
@@ -39,7 +44,10 @@ public class VersionIT
             throws Exception
     {
         String versionString = "3.14.15";
-        CommandStatus status = main(Version.of(versionString), "-c", config.toString());
+        Context context = Context.builder()
+                .version(Version.of(versionString))
+                .build();
+        CommandStatus status = main(context, "-c", config.toString());
         assertThat(status.errUtf8(), containsString("Digdag v" + versionString));
     }
 
@@ -47,9 +55,12 @@ public class VersionIT
     public void testVersion()
             throws Exception
     {
-        String localVersion = REMOTE_VERSION + "-NOT";
-        CommandStatus status = main(Version.of(localVersion), "version", "-e", server.endpoint(), "-c", config.toString());
-        assertThat(status.outUtf8(), containsString("Client version: " + localVersion));
+        String localVersionString = REMOTE_VERSION + "-NOT";
+        Context context = Context.builder()
+                .version(Version.of(localVersionString))
+                .build();
+        CommandStatus status = main(context, "version", "-e", server.endpoint(), "-c", config.toString());
+        assertThat(status.outUtf8(), containsString("Client version: " + localVersionString));
         assertThat(status.outUtf8(), containsString("Server version: " + REMOTE_VERSION));
     }
 
@@ -58,7 +69,10 @@ public class VersionIT
             throws Exception
     {
         String localVersionString = REMOTE_VERSION + "-NOT";
-        CommandStatus status = main(Version.of(localVersionString), "workflows", "-e", server.endpoint(), "-c", config.toString());
+        Context context = Context.builder()
+                .version(Version.of(localVersionString))
+                .build();
+        CommandStatus status = main(context, "workflows", "-e", server.endpoint(), "-c", config.toString());
         assertThat(status.code(), is(not(0)));
         assertThat(status.errUtf8(), containsString("Client: " + localVersionString));
         assertThat(status.errUtf8(), containsString("Server: " + REMOTE_VERSION));

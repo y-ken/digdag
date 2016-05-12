@@ -23,9 +23,9 @@ public class Show
 
     // TODO support -p option? for jinja template rendering
 
-    public Show(PrintStream out, PrintStream err, Environment environment)
+    public Show(PrintStream out, PrintStream err, Context ctx)
     {
-        super(environment);
+        super(ctx);
     }
 
     @Override
@@ -33,18 +33,18 @@ public class Show
             throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
         show(args.get(0));
     }
 
     @Override
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag show <digdag.yml> [options...]");
         err.println("  Options:");
         err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
-        Main.showCommonOptions(err, environment);
+        Main.showCommonOptions(err, ctx);
         return systemExit(error);
     }
 

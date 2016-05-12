@@ -1,11 +1,10 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
 import java.util.List;
 import java.io.IOException;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
@@ -24,9 +23,9 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
-    public ShowLog(Version version, Environment environment)
+    public ShowLog(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -41,11 +40,11 @@ public class ShowLog
             showLogs(parseLongOrUsage(args.get(0)), Optional.of(args.get(1)));
             break;
         default:
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
     }
 
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag log <attempt-id> [+task name prefix]");
         err.println("    -v, --verbose                    show debug logs");

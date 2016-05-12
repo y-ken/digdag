@@ -1,19 +1,18 @@
 package io.digdag.cli.client;
 
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 
-import java.io.PrintStream;
 import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Version extends ClientCommand
 {
-    public Version(io.digdag.core.Version version, Environment environment)
+    public Version(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -27,7 +26,7 @@ public class Version extends ClientCommand
     }
 
     @Override
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag version");
         err.println("  Options:");

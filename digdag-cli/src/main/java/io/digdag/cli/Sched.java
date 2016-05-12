@@ -1,6 +1,5 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
 import java.util.Properties;
 import java.util.Map;
 import java.util.HashMap;
@@ -51,9 +50,9 @@ public class Sched
 
     // TODO no-schedule mode
 
-    public Sched(Version version, Environment environment)
+    public Sched(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -63,14 +62,14 @@ public class Sched
         JvmUtil.validateJavaRuntime(err);
 
         if (args.size() != 0) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
 
         sched();
     }
 
     @Override
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag sched [options...]");
         err.println("  Options:");
@@ -82,7 +81,7 @@ public class Sched
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(err, environment);
+        Main.showCommonOptions(err, ctx);
         return systemExit(error);
     }
 

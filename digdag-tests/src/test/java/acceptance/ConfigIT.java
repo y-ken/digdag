@@ -1,6 +1,7 @@
 package acceptance;
 
 import com.google.common.collect.ImmutableMap;
+import io.digdag.cli.Context;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -62,9 +63,12 @@ public class ConfigIT
         Files.write(configFile, "params.mysql.password=secret".getBytes(UTF_8));
 
         Map<String, String> env = ImmutableMap.of("XDG_CONFIG_HOME", configHome.toAbsolutePath().toString());
+        Context context = Context.builder()
+                .env(env)
+                .build();
 
         TestUtils.fakeHome(home.toString(), () -> {
-            main(env, "run", "-o", root().toString(), "-f", root().resolve("params.yml").toString());
+            main(context, "run", "-o", root().toString(), "-f", root().resolve("params.yml").toString());
         });
 
         assertThat(Files.readAllBytes(root().resolve("foo.out")), is("secret\n".getBytes(UTF_8)));

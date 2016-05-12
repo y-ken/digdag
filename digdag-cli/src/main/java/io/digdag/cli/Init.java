@@ -1,6 +1,5 @@
 package io.digdag.cli;
 
-import java.io.PrintStream;
 import java.util.Map;
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,9 +15,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Init
     extends Command
 {
-    public Init(Environment environment)
+    public Init(Context ctx)
     {
-        super(environment);
+        super(ctx);
     }
 
     @Override
@@ -26,17 +25,17 @@ public class Init
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
         init(args.get(0));
     }
 
     @Override
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag init <dir>");
         err.println("  Options:");
-        Main.showCommonOptions(err, environment);
+        Main.showCommonOptions(err, ctx);
         err.println("  Example:");
         err.println("    $ digdag init mydag");
         return systemExit(error);

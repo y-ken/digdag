@@ -2,10 +2,9 @@ package io.digdag.cli.client;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 
 import com.beust.jcommander.Parameter;
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
@@ -19,9 +18,9 @@ public class Upload
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Upload(Version version, Environment environment)
+    public Upload(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -29,15 +28,15 @@ public class Upload
         throws Exception
     {
         if (args.size() != 2) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
         if (revision == null) {
-            throw usage("-r, --revision option is required", environment);
+            throw usage("-r, --revision option is required", ctx);
         }
         upload(args.get(0), args.get(1));
     }
 
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag upload <path.tar.gz> <project>");
         err.println("  Options:");

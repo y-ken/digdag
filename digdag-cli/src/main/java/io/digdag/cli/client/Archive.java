@@ -5,7 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import io.digdag.cli.Command;
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.Main;
 import io.digdag.cli.Run;
 import io.digdag.cli.StdErr;
@@ -41,9 +41,9 @@ public class Archive
     @Parameter(names = {"-o", "--output"})
     String output = "digdag.archive.tar.gz";
 
-    public Archive(Environment environment)
+    public Archive(Context ctx)
     {
-        super(environment);
+        super(ctx);
     }
 
     @Override
@@ -51,19 +51,19 @@ public class Archive
             throws Exception
     {
         if (args.size() != 0) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
         archive();
     }
 
     @Override
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag archive [options...]");
         err.println("  Options:");
         err.println("    -f, --file PATH                  use this file to load a project (default: digdag.yml)");
         err.println("    -o, --output ARCHIVE.tar.gz      output path (default: digdag.archive.tar.gz)");
-        Main.showCommonOptions(err, environment);
+        Main.showCommonOptions(err, ctx);
         return systemExit(error);
     }
 

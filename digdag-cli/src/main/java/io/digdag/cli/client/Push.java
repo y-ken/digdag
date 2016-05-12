@@ -11,7 +11,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.Run;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
@@ -22,7 +22,6 @@ import io.digdag.client.api.RestProject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.DigdagEmbed;
-import io.digdag.core.Version;
 import io.digdag.core.config.ConfigLoaderManager;
 
 import static io.digdag.cli.Arguments.loadParams;
@@ -43,9 +42,9 @@ public class Push
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Push(Version version, Environment environment)
+    public Push(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -53,15 +52,15 @@ public class Push
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
         if (revision == null) {
-            throw usage("-r, --revision option is required", environment);
+            throw usage("-r, --revision option is required", ctx);
         }
         push(args.get(0));
     }
 
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag push <project> -r <revision>");
         err.println("  Options:");
@@ -103,6 +102,6 @@ public class Push
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
-        new Upload(localVersion, environment).showUploadedProject(proj);
+        new Upload(ctx).showUploadedProject(proj);
     }
 }

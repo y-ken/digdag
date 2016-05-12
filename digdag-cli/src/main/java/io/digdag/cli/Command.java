@@ -22,7 +22,7 @@ public abstract class Command
 
     protected final PrintStream out;
     protected final PrintStream err;
-    protected final Environment environment;
+    protected final Context ctx;
 
     @Parameter()
     protected List<String> args = new ArrayList<>();
@@ -42,16 +42,16 @@ public abstract class Command
     @Parameter(names = {"-help", "--help"}, help = true, hidden = true)
     protected boolean help;
 
-    protected Command(Environment environment)
+    protected Command(Context ctx)
     {
-        this.out = environment.out();
-        this.err = environment.err();
-        this.environment = environment;
+        this.out = ctx.out();
+        this.err = ctx.err();
+        this.ctx = ctx;
     }
 
     public abstract void main() throws Exception;
 
-    public abstract SystemExitException usage(String error, Environment environment);
+    public abstract SystemExitException usage(String error, Context ctx);
 
     protected Properties loadSystemProperties()
         throws IOException
@@ -64,7 +64,7 @@ public abstract class Command
         } else {
             // If no configuration file was specified, load the default configuration, if it exists.
             try {
-                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(environment));
+                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(ctx));
             }
             catch (NoSuchFileException ex) {
                 log.trace("configuration file not found: {}", configPath, ex);

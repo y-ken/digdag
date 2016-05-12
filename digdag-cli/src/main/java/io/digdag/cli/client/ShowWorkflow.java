@@ -1,11 +1,10 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
 import java.util.List;
 
 import javax.ws.rs.NotFoundException;
 
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestWorkflowDefinition;
@@ -17,9 +16,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowWorkflow
     extends ClientCommand
 {
-    public ShowWorkflow(Version version, Environment environment)
+    public ShowWorkflow(Context ctx)
     {
-        super(version, environment);
+        super(ctx);
     }
 
     @Override
@@ -37,11 +36,11 @@ public class ShowWorkflow
             showWorkflowDetails(args.get(0), args.get(1));
             break;
         default:
-            throw usage(null, environment);
+            throw usage(null, ctx);
         }
     }
 
-    public SystemExitException usage(String error, Environment environment)
+    public SystemExitException usage(String error, Context ctx)
     {
         err.println("Usage: digdag workflows [project-name] [name]");
         showCommonOptions();

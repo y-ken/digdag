@@ -1,10 +1,9 @@
 package acceptance;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.digdag.cli.Context;
 import io.digdag.client.DigdagClient;
-import io.digdag.core.Version;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
@@ -19,7 +18,6 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,12 +35,11 @@ public class TemporaryDigdagServer
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
-    private final Version version;
 
     private final String host;
     private final int port;
     private final String endpoint;
-    private final Map<String, String> env;
+    private final Context context;
 
     private final ExecutorService executor;
 
@@ -53,13 +50,10 @@ public class TemporaryDigdagServer
 
     public TemporaryDigdagServer(Builder builder)
     {
-        this.version = Objects.requireNonNull(builder.version, "version");
-
         this.host = "localhost";
         this.port = 65432;
         this.endpoint = "http://" + host + ":" + port;
-        this.env = builder.env;
-
+        this.context = Objects.requireNonNull(builder.context, "context");
 
         this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
     }
@@ -106,8 +100,7 @@ public class TemporaryDigdagServer
         }
 
         executor.execute(() -> main(
-                version,
-                env,
+                context,
                 "server",
                 "-m",
                 "--task-log", taskLog.toString(),
@@ -162,30 +155,22 @@ public class TemporaryDigdagServer
         return builder().build();
     }
 
-    public static TemporaryDigdagServer of(Version version)
+    public static TemporaryDigdagServer of(Context context)
     {
-        return builder().version(version).build();
+        return builder().context(context).build();
     }
 
     public static class Builder
     {
-
         private Builder()
         {
         }
 
-        private Version version = Version.buildVersion();
-        private Map<String, String> env = ImmutableMap.of();
+        private Context context = Context.defaultContext();
 
-        public Builder version(Version version)
+        public Builder context(Context context)
         {
-            this.version = version;
-            return this;
-        }
-
-        public Builder map(Map<String, String> env)
-        {
-            this.env = ImmutableMap.copyOf(env);
+            this.context = context;
             return this;
         }
 
@@ -199,7 +184,7 @@ public class TemporaryDigdagServer
     public String toString()
     {
         return "TemporaryDigdagServer{" +
-                "version=" + version +
+                "ctx=" + context +
                 ", host='" + host + '\'' +
                 ", port=" + port +
                 '}';

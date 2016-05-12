@@ -35,23 +35,20 @@ import java.util.Set;
 import static io.digdag.cli.SystemExitException.systemExit;
 
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
-import static io.digdag.core.Version.buildVersion;
 
 public class Main
 {
     private static final String PROGRAM_NAME = "digdag";
 
-    private final io.digdag.core.Version version;
     private final PrintStream out;
     private final PrintStream err;
-    private final Environment environment;
+    private final Context ctx;
 
-    public Main(io.digdag.core.Version version, Environment environment)
+    public Main(Context ctx)
     {
-        this.version = version;
-        this.out = environment.out();
-        this.err = environment.err();
-        this.environment = environment;
+        this.out = ctx.out();
+        this.err = ctx.err();
+        this.ctx = ctx;
     }
 
     public static class MainOptions
@@ -62,8 +59,7 @@ public class Main
 
     public static void main(String... args)
     {
-        Environment environment = new Environment(System.getenv(), System.out, System.err);
-        int code = new Main(buildVersion(), environment).cli(args);
+        int code = new Main(Context.defaultContext()).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -72,47 +68,47 @@ public class Main
     public int cli(String... args)
     {
         if (args.length == 1 && args[0].equals("--version")) {
-            out.println(version.version());
+            out.println(ctx.version());
             return 0;
         }
-        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + version);
+        err.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z").format(new Date()) + ": Digdag v" + ctx.version());
 
         MainOptions mainOpts = new MainOptions();
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("init", new Init(environment), "new");
-        jc.addCommand("run", new Run(environment), "r");
-        jc.addCommand("check", new Check(environment), "c");
-        jc.addCommand("scheduler", new Sched(version, environment), "sched");
+        jc.addCommand("init", new Init(ctx), "new");
+        jc.addCommand("run", new Run(ctx), "r");
+        jc.addCommand("check", new Check(ctx), "c");
+        jc.addCommand("scheduler", new Sched(ctx), "sched");
 
-        jc.addCommand("server", new Server(version, environment));
+        jc.addCommand("server", new Server(ctx));
 
-        jc.addCommand("push", new Push(version, environment));
-        jc.addCommand("archive", new Archive(environment));
-        jc.addCommand("upload", new Upload(version, environment));
+        jc.addCommand("push", new Push(ctx));
+        jc.addCommand("archive", new Archive(ctx));
+        jc.addCommand("upload", new Upload(ctx));
 
-        jc.addCommand("workflow", new ShowWorkflow(version, environment), "workflows");
-        jc.addCommand("start", new Start(version, environment));
-        jc.addCommand("retry", new Retry(version, environment));
-        jc.addCommand("session", new ShowSession(version, environment), "sessions");
-        jc.addCommand("atteempt", new ShowAttempt(version, environment), "attempts");
-        jc.addCommand("reschedule", new Reschedule(version, environment));
-        jc.addCommand("backfill", new Backfill(version, environment));
-        jc.addCommand("log", new ShowLog(version, environment), "logs");
-        jc.addCommand("kill", new Kill(version, environment));
-        jc.addCommand("task", new ShowTask(version, environment), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(version, environment), "schedules");
-        jc.addCommand("version", new Version(version, environment), "version");
+        jc.addCommand("workflow", new ShowWorkflow(ctx), "workflows");
+        jc.addCommand("start", new Start(ctx));
+        jc.addCommand("retry", new Retry(ctx));
+        jc.addCommand("session", new ShowSession(ctx), "sessions");
+        jc.addCommand("atteempt", new ShowAttempt(ctx), "attempts");
+        jc.addCommand("reschedule", new Reschedule(ctx));
+        jc.addCommand("backfill", new Backfill(ctx));
+        jc.addCommand("log", new ShowLog(ctx), "logs");
+        jc.addCommand("kill", new Kill(ctx));
+        jc.addCommand("task", new ShowTask(ctx), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(ctx), "schedules");
+        jc.addCommand("version", new Version(ctx), "version");
 
-        jc.addCommand("selfupdate", new SelfUpdate(environment));
+        jc.addCommand("selfupdate", new SelfUpdate(ctx));
 
         try {
             try {
                 jc.parse(args);
             }
             catch (MissingCommandException ex) {
-                throw usage(err, "available commands are: "+jc.getCommands().keySet(), environment);
+                throw usage(err, "available commands are: "+jc.getCommands().keySet(), ctx);
             }
             catch (ParameterException ex) {
                 if (getParsedCommand(jc) == null) {
@@ -124,12 +120,12 @@ public class Main
             }
 
             if (mainOpts.help) {
-                throw usage(err, null, environment);
+                throw usage(err, null, ctx);
             }
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                throw usage(err, null, environment);
+                throw usage(err, null, ctx);
             }
 
             processCommonOptions(err, command);
@@ -190,7 +186,7 @@ public class Main
             throws SystemExitException
     {
         if (command.help) {
-            throw command.usage(null, environment);
+            throw command.usage(null, ctx);
         }
 
         switch (command.logLevel) {
@@ -201,7 +197,7 @@ public class Main
         case "trace":
             break;
         default:
-            throw usage(err, "Unknown log level '"+command.logLevel+"'", environment);
+            throw usage(err, "Unknown log level '"+command.logLevel+"'", ctx);
         }
 
         configureLogging(command.logLevel, command.logPath);
@@ -241,7 +237,7 @@ public class Main
     }
 
     // called also by Run
-    static SystemExitException usage(PrintStream err, String error, Environment environment)
+    static SystemExitException usage(PrintStream err, String error, Context ctx)
     {
         err.println("Usage: digdag <command> [options...]");
         err.println("  Local-mode commands:");
@@ -272,7 +268,7 @@ public class Main
         err.println("    version                          show client and server version");
         err.println("");
         err.println("  Options:");
-        showCommonOptions(err, environment);
+        showCommonOptions(err, ctx);
         if (error == null) {
             err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
@@ -282,12 +278,12 @@ public class Main
         }
     }
 
-    public static void showCommonOptions(PrintStream err, Environment environment)
+    public static void showCommonOptions(PrintStream err, Context ctx)
     {
         err.println("    -L, --log PATH                   output log messages to a file (default: -)");
         err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         err.println("    -X KEY=VALUE                     add a performance system config");
-        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(environment) + ")");
+        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(ctx) + ")");
         err.println("");
     }
 }

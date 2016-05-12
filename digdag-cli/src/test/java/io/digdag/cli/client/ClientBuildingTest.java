@@ -3,12 +3,11 @@ package io.digdag.cli.client;
 import java.lang.reflect.Field;
 
 import com.google.common.collect.ImmutableMap;
-import io.digdag.cli.Environment;
+import io.digdag.cli.Context;
 import org.junit.Test;
 
 import io.digdag.client.DigdagClient;
 
-import static io.digdag.core.Version.buildVersion;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -17,7 +16,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), new Environment(ImmutableMap.of(), System.out, System.err));
+        ShowWorkflow cmd = new ShowWorkflow(Context.defaultContext());
         cmd.endpoint = endpoint;
         DigdagClient client = cmd.buildClient(false);
         Field f = client.getClass().getDeclaredField("endpoint");
