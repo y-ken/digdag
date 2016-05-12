@@ -87,6 +87,7 @@ public class ShOperatorFactory
                 });
 
             // add archive path to the end of $PATH so that bin/cmd works without ./ at the beginning
+            // TODO (dano): inject environment so this can be tested
             String pathEnv = System.getenv("PATH");
             if (pathEnv == null) {
                 pathEnv = workspacePath.toAbsolutePath().toString();
