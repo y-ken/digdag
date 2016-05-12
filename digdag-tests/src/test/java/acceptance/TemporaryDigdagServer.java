@@ -1,6 +1,7 @@
 package acceptance;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,6 +42,7 @@ public class TemporaryDigdagServer
     private final String host;
     private final int port;
     private final String endpoint;
+    private final Map<String, String> env;
 
     private final ExecutorService executor;
 
@@ -55,6 +58,8 @@ public class TemporaryDigdagServer
         this.host = "localhost";
         this.port = 65432;
         this.endpoint = "http://" + host + ":" + port;
+        this.env = builder.env;
+
 
         this.executor = Executors.newSingleThreadExecutor(DAEMON_THREAD_FACTORY);
     }
@@ -102,6 +107,7 @@ public class TemporaryDigdagServer
 
         executor.execute(() -> main(
                 version,
+                env,
                 "server",
                 "-m",
                 "--task-log", taskLog.toString(),
@@ -163,15 +169,23 @@ public class TemporaryDigdagServer
 
     public static class Builder
     {
+
         private Builder()
         {
         }
 
         private Version version = Version.buildVersion();
+        private Map<String, String> env = ImmutableMap.of();
 
         public Builder version(Version version)
         {
             this.version = version;
+            return this;
+        }
+
+        public Builder map(Map<String, String> env)
+        {
+            this.env = ImmutableMap.copyOf(env);
             return this;
         }
 

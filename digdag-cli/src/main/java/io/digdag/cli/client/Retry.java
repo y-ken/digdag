@@ -7,6 +7,7 @@ import java.util.HashMap;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import io.digdag.cli.Environment;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -48,9 +49,9 @@ public class Retry
     @Parameter(names = {"--name"})
     String retryAttemptName = null;
 
-    public Retry(Version version, PrintStream out, PrintStream err)
+    public Retry(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -58,7 +59,7 @@ public class Retry
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null);
+            throw usage(null, environment);
         }
         String error = "";
         if (!keepRevision && !latestRevision && revision == null) {
@@ -71,15 +72,15 @@ public class Retry
             error += "--name <name> option is required.";
         }
         if (!error.isEmpty()) {
-            throw usage(error);
+            throw usage(error, environment);
         }
 
         if (keepRevision && latestRevision || latestRevision && revision != null || keepRevision && revision != null) {
-            throw usage("Setting --keep-revision, --latest-revision, or --revision together is invalid.");
+            throw usage("Setting --keep-revision, --latest-revision, or --revision together is invalid.", environment);
         }
 
         if (all && resume || resume && from != null || all && from != null) {
-            throw usage("Setting --all, --resume, or --from together is invalid.");
+            throw usage("Setting --all, --resume, or --from together is invalid.", environment);
         }
 
         if (resume || from != null) {
@@ -89,7 +90,7 @@ public class Retry
         retry(parseLongOrUsage(args.get(0)));
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag retry <attempt-id>");
         err.println("  Options:");

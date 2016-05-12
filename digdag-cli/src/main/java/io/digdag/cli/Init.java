@@ -16,9 +16,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Init
     extends Command
 {
-    public Init(PrintStream out, PrintStream err)
+    public Init(PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err);
+        super(out, err, environment);
     }
 
     @Override
@@ -26,17 +26,17 @@ public class Init
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null);
+            throw usage(null, environment);
         }
         init(args.get(0));
     }
 
     @Override
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag init <dir>");
         err.println("  Options:");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
         err.println("  Example:");
         err.println("    $ digdag init mydag");
         return systemExit(error);

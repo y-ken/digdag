@@ -6,12 +6,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.HashMap;
-import java.io.File;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import io.digdag.cli.Environment;
 import io.digdag.cli.Run;
 import io.digdag.cli.StdErr;
 import io.digdag.cli.StdOut;
@@ -43,9 +43,9 @@ public class Push
     @Parameter(names = {"-r", "--revision"})
     String revision = null;
 
-    public Push(Version version, PrintStream out, PrintStream err)
+    public Push(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -53,15 +53,15 @@ public class Push
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null);
+            throw usage(null, environment);
         }
         if (revision == null) {
-            throw usage("-r, --revision option is required");
+            throw usage("-r, --revision option is required", environment);
         }
         push(args.get(0));
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag push <project> -r <revision>");
         err.println("  Options:");
@@ -103,6 +103,6 @@ public class Push
 
         DigdagClient client = buildClient();
         RestProject proj = client.putProjectRevision(projName, revision, archivePath.toFile());
-        new Upload(localVersion, out, err).showUploadedProject(proj);
+        new Upload(localVersion, out, err, environment).showUploadedProject(proj);
     }
 }

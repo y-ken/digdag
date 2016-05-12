@@ -130,9 +130,9 @@ public class Run
 
     private Path resumeStatePath;
 
-    public Run(PrintStream out, PrintStream err)
+    public Run(PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err);
+        super(out, err, environment);
     }
 
     @Override
@@ -150,19 +150,19 @@ public class Run
         }
 
         if (runStart != null && runStartStop != null) {
-            throw usage("-s, --start and -g, --goal don't work together");
+            throw usage("-s, --start and -g, --goal don't work together", environment);
         }
 
         if (runStartStop != null && runEnd != null) {
-            throw usage("-s, --start and -e, --end don't work together");
+            throw usage("-s, --start and -e, --end don't work together", environment);
         }
 
         if (rerunAll && runStart != null) {
-            throw usage("-a, --rerun and -s, --start don't work together");
+            throw usage("-a, --rerun and -s, --start don't work together", environment);
         }
 
         if (rerunAll && runStartStop != null) {
-            throw usage("-a, --rerun and -g, --goal don't work together");
+            throw usage("-a, --rerun and -g, --goal don't work together", environment);
         }
 
         String matchPattern;
@@ -174,12 +174,12 @@ public class Run
             matchPattern = args.get(0);
             break;
         default:
-            throw usage(null);
+            throw usage(null, environment);
         }
         run(matchPattern);
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag run [workflow][+task] [options...]");
         err.println("  Options:");
@@ -196,7 +196,7 @@ public class Run
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
         return systemExit(error);
     }
 

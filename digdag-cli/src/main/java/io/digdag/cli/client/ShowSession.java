@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.Parameter;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import io.digdag.cli.Environment;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -20,9 +21,9 @@ public class ShowSession
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
 
-    public ShowSession(Version version, PrintStream out, PrintStream err)
+    public ShowSession(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     // ShowAttempt overrides this method
@@ -53,7 +54,7 @@ public class ShowSession
             showSessions(args.get(0), args.get(1));
             break;
         default:
-            throw usage(null);
+            throw usage(null, environment);
         }
     }
 
@@ -68,7 +69,7 @@ public class ShowSession
         printAttempt(attempt);
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         String commandName = includeRetries() ? "attempts" : "sessions";
         err.println("Usage: digdag " + commandName + " [project-name] [workflow-name]");

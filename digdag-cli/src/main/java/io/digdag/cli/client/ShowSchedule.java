@@ -2,6 +2,8 @@ package io.digdag.cli.client;
 
 import java.io.PrintStream;
 import java.time.Instant;
+
+import io.digdag.cli.Environment;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -13,9 +15,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class ShowSchedule
     extends ClientCommand
 {
-    public ShowSchedule(Version version, PrintStream out, PrintStream err)
+    public ShowSchedule(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -27,11 +29,11 @@ public class ShowSchedule
             showSchedules();
             break;
         default:
-            throw usage(null);
+            throw usage(null, environment);
         }
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag schedules");
         err.println("  Options:");

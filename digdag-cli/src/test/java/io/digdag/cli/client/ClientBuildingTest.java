@@ -2,7 +2,8 @@ package io.digdag.cli.client;
 
 import java.lang.reflect.Field;
 
-import io.digdag.core.*;
+import com.google.common.collect.ImmutableMap;
+import io.digdag.cli.Environment;
 import org.junit.Test;
 
 import io.digdag.client.DigdagClient;
@@ -16,7 +17,7 @@ public class ClientBuildingTest
     private String buildEndpoint(String endpoint)
         throws Exception
     {
-        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), System.out, System.err);
+        ShowWorkflow cmd = new ShowWorkflow(buildVersion(), System.out, System.err, new Environment(ImmutableMap.of()));
         cmd.endpoint = endpoint;
         DigdagClient client = cmd.buildClient(false);
         Field f = client.getClass().getDeclaredField("endpoint");

@@ -6,6 +6,7 @@ import java.time.Instant;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import io.digdag.cli.Environment;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -29,9 +30,9 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Backfill(Version version, PrintStream out, PrintStream err)
+    public Backfill(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -39,14 +40,14 @@ public class Backfill
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null);
+            throw usage(null, environment);
         }
         int schedId = parseIntOrUsage(args.get(0));
 
         backfill(schedId);
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag backfill <schedule-id>");
         err.println("  Options:");

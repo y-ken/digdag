@@ -28,9 +28,9 @@ public class SelfUpdate
     @Parameter(names = {"-e", "--endpoint"})
     String endpoint = "http://dl.digdag.io";
 
-    public SelfUpdate(PrintStream out, PrintStream err)
+    public SelfUpdate(PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err);
+        super(out, err, environment);
     }
 
     @Override
@@ -45,16 +45,16 @@ public class SelfUpdate
             selfUpdate(args.get(0));
             break;
         default:
-            throw usage(null);
+            throw usage(null, environment);
         }
     }
 
     @Override
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag selfupdate [version]]");
         err.println("  Options:");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
         err.println("");
         err.println("  Examples:");
         err.println("    $ digdag selfupdate");

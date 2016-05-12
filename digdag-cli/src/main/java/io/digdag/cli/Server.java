@@ -36,9 +36,9 @@ public class Server
 
     protected final Version localVersion;
 
-    public Server(Version localVersion, PrintStream out, PrintStream err)
+    public Server(Version localVersion, PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err);
+        super(out, err, environment);
         this.localVersion = localVersion;
     }
 
@@ -49,21 +49,21 @@ public class Server
         JvmUtil.validateJavaRuntime(err);
 
         if (args.size() != 0) {
-            throw usage(null);
+            throw usage(null, environment);
         }
 
         if (database == null && memoryDatabase == false && configPath == null) {
-            throw usage("--database, --memory, or --config option is required");
+            throw usage("--database, --memory, or --config option is required", environment);
         }
         if (database != null && memoryDatabase == true) {
-            throw usage("Setting both --database and --memory is invalid");
+            throw usage("Setting both --database and --memory is invalid", environment);
         }
 
         server();
     }
 
     @Override
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag server [options...]");
         err.println("  Options:");
@@ -74,7 +74,7 @@ public class Server
         err.println("    -O, --task-log DIR               store task logs to this database");
         err.println("    -A, --access-log DIR             store access logs files to this path");
         err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
         return systemExit(error);
     }
 

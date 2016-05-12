@@ -10,6 +10,7 @@ import com.google.inject.Scopes;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.DynamicParameter;
+import io.digdag.cli.Environment;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
@@ -51,9 +52,9 @@ public class Start
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Start(Version version, PrintStream out, PrintStream err)
+    public Start(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -61,15 +62,15 @@ public class Start
         throws Exception
     {
         if (args.size() != 2) {
-            throw usage(null);
+            throw usage(null, environment);
         }
         if (sessionString == null) {
-            throw usage("--session option is required");
+            throw usage("--session option is required", environment);
         }
         start(args.get(0), args.get(1));
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag start <project-name> <name>");
         err.println("  Options:");

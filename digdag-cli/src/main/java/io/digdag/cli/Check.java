@@ -55,9 +55,9 @@ public class Check
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
 
-    public Check(PrintStream out, PrintStream err)
+    public Check(PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err);
+        super(out, err, environment);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class Check
         check();
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag check [options...]");
         err.println("  Options:");
@@ -79,7 +79,7 @@ public class Check
         err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
         //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
         return systemExit(error);
     }
 

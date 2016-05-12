@@ -5,6 +5,7 @@ import java.time.Instant;
 
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import io.digdag.cli.Environment;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.TimeUtil;
 import io.digdag.client.DigdagClient;
@@ -28,9 +29,9 @@ public class Reschedule
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Reschedule(Version version, PrintStream out, PrintStream err)
+    public Reschedule(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -38,7 +39,7 @@ public class Reschedule
         throws Exception
     {
         if (args.size() != 1) {
-            throw usage(null);
+            throw usage(null, environment);
         }
         int schedId = parseIntOrUsage(args.get(0));
 
@@ -46,12 +47,12 @@ public class Reschedule
             throw systemExit("-s and -t can't be set together");
         }
         else if (toTime == null && skipCount <= 0) {
-            throw usage("-s or -t is required");
+            throw usage("-s or -t is required", environment);
         }
         reschedule(schedId);
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag reschedule <schedule-id>");
         err.println("  Options:");

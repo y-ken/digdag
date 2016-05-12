@@ -5,12 +5,12 @@ import java.util.List;
 import java.io.IOException;
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
+import io.digdag.cli.Environment;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestTask;
-import io.digdag.core.*;
 import io.digdag.core.Version;
 import io.digdag.core.log.LogLevel;
 import static io.digdag.cli.SystemExitException.systemExit;
@@ -24,9 +24,9 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
-    public ShowLog(Version version, PrintStream out, PrintStream err)
+    public ShowLog(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -41,11 +41,11 @@ public class ShowLog
             showLogs(parseLongOrUsage(args.get(0)), Optional.of(args.get(1)));
             break;
         default:
-            throw usage(null);
+            throw usage(null, environment);
         }
     }
 
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag log <attempt-id> [+task name prefix]");
         err.println("    -v, --verbose                    show debug logs");

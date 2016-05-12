@@ -3,6 +3,7 @@ package io.digdag.cli.client;
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.Command;
+import io.digdag.cli.Environment;
 import io.digdag.cli.Main;
 import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
@@ -14,24 +15,12 @@ import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
 import static io.digdag.cli.SystemExitException.systemExit;
-import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
         extends Command
@@ -49,9 +38,9 @@ public abstract class ClientCommand
     @Parameter(names = {"--disable-version-check"})
     protected boolean disableVersionCheck;
 
-    public ClientCommand(Version localVersion, PrintStream out, PrintStream err)
+    public ClientCommand(Version localVersion, PrintStream out, PrintStream err, Environment environment)
     {
-        super(out, err);
+        super(out, err, environment);
         this.localVersion = Objects.requireNonNull(localVersion, "localVersion");
     }
 
@@ -169,7 +158,7 @@ public abstract class ClientCommand
     public void showCommonOptions()
     {
         err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
     }
 
     protected long parseLongOrUsage(String arg)
@@ -179,7 +168,7 @@ public abstract class ClientCommand
             return Long.parseLong(args.get(0));
         }
         catch (NumberFormatException ex) {
-            throw usage(ex.getMessage());
+            throw usage(ex.getMessage(), environment);
         }
     }
 
@@ -190,7 +179,7 @@ public abstract class ClientCommand
             return Integer.parseInt(args.get(0));
         }
         catch (NumberFormatException ex) {
-            throw usage(ex.getMessage());
+            throw usage(ex.getMessage(), environment);
         }
     }
 

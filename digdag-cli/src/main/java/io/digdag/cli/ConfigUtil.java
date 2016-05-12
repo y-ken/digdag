@@ -5,17 +5,17 @@ import java.nio.file.Paths;
 
 class ConfigUtil
 {
-    static Path defaultConfigPath()
+    static Path defaultConfigPath(Environment environment)
     {
-        return configHome().resolve("digdag").resolve("config");
+        return configHome(environment).resolve("digdag").resolve("config");
     }
 
-    private static Path configHome()
+    private static Path configHome(Environment environment)
     {
-        String configHome = System.getenv("XDG_CONFIG_HOME");
+        String configHome = environment.getEnvironmentVariable("XDG_CONFIG_HOME");
         if (configHome != null) {
             return Paths.get(configHome);
         }
-        return Paths.get(System.getProperty("user.home"), ".config");
+        return Paths.get(environment.getProperty("user.home"), ".config");
     }
 }

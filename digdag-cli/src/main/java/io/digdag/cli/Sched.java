@@ -51,9 +51,9 @@ public class Sched
 
     // TODO no-schedule mode
 
-    public Sched(Version version, PrintStream out, PrintStream err)
+    public Sched(Version version, PrintStream out, PrintStream err, Environment environment)
     {
-        super(version, out, err);
+        super(version, out, err, environment);
     }
 
     @Override
@@ -63,14 +63,14 @@ public class Sched
         JvmUtil.validateJavaRuntime(err);
 
         if (args.size() != 0) {
-            throw usage(null);
+            throw usage(null, environment);
         }
 
         sched();
     }
 
     @Override
-    public SystemExitException usage(String error)
+    public SystemExitException usage(String error, Environment environment)
     {
         err.println("Usage: digdag sched [options...]");
         err.println("  Options:");
@@ -82,7 +82,7 @@ public class Sched
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(err, environment);
         return systemExit(error);
     }
 
