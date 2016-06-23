@@ -138,6 +138,7 @@ public class Main
 
             verbose = processCommonOptions(err, command);
 
+            command.setupParameters();
             command.main();
             return 0;
         }

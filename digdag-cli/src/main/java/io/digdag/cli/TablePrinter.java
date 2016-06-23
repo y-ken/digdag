@@ -1,4 +1,4 @@
-package io.digdag.cli.client;
+package io.digdag.cli;
 
 import com.google.common.collect.ImmutableList;
 
