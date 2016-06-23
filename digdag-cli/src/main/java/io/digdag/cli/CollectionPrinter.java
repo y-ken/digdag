@@ -18,7 +18,6 @@ import static java.util.stream.Collectors.toList;
 
 public class CollectionPrinter<T>
 {
-
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .registerModule(new GuavaModule())
             .registerModule(new JacksonTimeModule());
@@ -42,9 +41,17 @@ public class CollectionPrinter<T>
     public void print(OutputFormat f, List<T> items, OutputStream out)
             throws IOException
     {
+        PrintStream ps = new PrintStream(out);
+        print(f, items, ps);
+        ps.flush();
+    }
+
+    private void print(OutputFormat f, List<T> items, PrintStream ps)
+            throws IOException
+    {
         switch (f) {
             case TABLE: {
-                TablePrinter table = new TablePrinter(new PrintStream(out));
+                TablePrinter table = new TablePrinter(ps);
                 List<String> header = columns.stream()
                         .map(c -> c.name)
                         .collect(toList());
@@ -59,13 +66,17 @@ public class CollectionPrinter<T>
             }
             break;
             case JSON: {
-                JSON_WRITER.writeValue(out, items);
+                String s = JSON_WRITER.writeValueAsString(items);
+                ps.println(s);
             }
             break;
             case YAML: {
-                YAML_WRITER.writeValue(out, items);
+                String s = YAML_WRITER.writeValueAsString(items);
+                ps.print(s);
             }
             break;
+            default:
+                throw new IllegalArgumentException();
         }
     }
 
