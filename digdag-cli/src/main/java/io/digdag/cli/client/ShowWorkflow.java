@@ -1,14 +1,15 @@
 package io.digdag.cli.client;
 
-import java.io.PrintStream;
-import java.util.List;
-
-import javax.ws.rs.NotFoundException;
 import io.digdag.cli.SystemExitException;
 import io.digdag.client.DigdagClient;
-import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.core.Version;
+
+import javax.ws.rs.NotFoundException;
+
+import java.io.PrintStream;
+import java.util.List;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -51,28 +52,37 @@ public class ShowWorkflow
     {
         DigdagClient client = buildClient();
 
+        TablePrinter table = new TablePrinter(out);
+        table.row("PROJECT", "PROJECT ID", "WORKFLOW", "REVISION");
+
         if (projName != null) {
             RestProject proj = client.getProject(projName);
-            ln("  %s", proj.getName());
-            for (RestWorkflowDefinition def : client.getWorkflowDefinitions(proj.getId())) {
-                ln("    %s", def.getName());
-            }
+            List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(proj.getId());
+            printProject(table, proj, defs);
         }
         else {
             for (RestProject proj : client.getProjects()) {
+                List<RestWorkflowDefinition> defs;
                 try {
-                    List<RestWorkflowDefinition> defs = client.getWorkflowDefinitions(proj.getId());
-                    ln("  %s", proj.getName());
-                    for (RestWorkflowDefinition def : defs) {
-                        ln("    %s", def.getName());
-                    }
+                    defs = client.getWorkflowDefinitions(proj.getId());
                 }
                 catch (NotFoundException ex) {
+                    continue;
                 }
+                printProject(table, proj, defs);
             }
         }
-        ln("");
+        table.print();
+        out.println();
+        out.flush();
         err.println("Use `digdag workflows <project-name> <name>` to show details.");
+    }
+
+    private void printProject(TablePrinter tablePrinter, RestProject proj, List<RestWorkflowDefinition> defs)
+    {
+        for (RestWorkflowDefinition def : defs) {
+            tablePrinter.row(proj.getName(), Integer.toString(proj.getId()), def.getName(), def.getRevision());
+        }
     }
 
     private void showWorkflowDetails(String projName, String defName)
