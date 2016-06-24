@@ -1,7 +1,14 @@
 package acceptance;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.InjectableValues;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import io.digdag.client.api.JacksonTimeModule;
 import org.immutables.value.Value;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -9,6 +16,16 @@ import java.nio.charset.StandardCharsets;
 @Value.Immutable
 public abstract class CommandStatus
 {
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+    static {
+        MAPPER.registerModule(new GuavaModule());
+        MAPPER.registerModule(new JacksonTimeModule());
+        MAPPER.setInjectableValues(new InjectableValues.Std()
+                .addValue(ObjectMapper.class, MAPPER));
+        MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
     public abstract int code();
 
     public abstract byte[] out();
@@ -42,5 +59,11 @@ public abstract class CommandStatus
                 .out(out)
                 .err(err)
                 .build();
+    }
+
+    public <T> T outJson(TypeReference<T> type)
+            throws IOException
+    {
+        return MAPPER.readValue(outUtf8(), type);
     }
 }

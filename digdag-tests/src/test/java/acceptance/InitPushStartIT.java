@@ -1,6 +1,8 @@
 package acceptance;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Optional;
+import com.google.common.collect.FluentIterable;
 import io.digdag.client.DigdagClient;
 import io.digdag.client.api.RestProject;
 import io.digdag.client.api.RestSession;
@@ -10,6 +12,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -18,6 +21,7 @@ import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.getSessionId;
 import static acceptance.TestUtils.main;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
@@ -113,13 +117,16 @@ public class InitPushStartIT
         }
 
         // Verify that the workflow is started
-        List<RestSession> sessions = client.getSessions();
-        assertThat(sessions.size(), is(1));
-        RestSession session = sessions.get(0);
-        assertThat(session.getProject().getName(), is("foobar"));
-        assertThat(session.getId(), is(sessionId));
-        assertThat(session.getLastAttempt().isPresent(), is(true));
-        assertThat(session.getLastAttempt().get().getId(), is(attemptId));
+        RestSession session;
+        {
+            List<RestSession> sessions = client.getSessions();
+            assertThat(sessions.size(), is(1));
+            session = sessions.get(0);
+            assertThat(session.getProject().getName(), is("foobar"));
+            assertThat(session.getId(), is(sessionId));
+            assertThat(session.getLastAttempt().isPresent(), is(true));
+            assertThat(session.getLastAttempt().get().getId(), is(attemptId));
+        }
 
         // Fetch session using client
         {
@@ -149,35 +156,26 @@ public class InitPushStartIT
         {
             // Listing all
             {
-                CommandStatus status = main("sessions",
-                        "-c", config.toString(),
-                        "-e", server.endpoint());
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSession> ss = sessions();
+                assertThat(ss.size(), is(1));
+                assertThat(ss.get(0).getId(), is(sessionId));
+                assertThat(ss.get(0).getLastAttempt().get().getId(), is(attemptId));
             }
 
             // By project name
             {
-                CommandStatus status = main("sessions",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        project.getName());
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSession> ss = sessions(project.getName());
+                assertThat(ss.size(), is(1));
+                assertThat(ss.get(0).getId(), is(sessionId));
+                assertThat(ss.get(0).getLastAttempt().get().getId(), is(attemptId));
             }
 
             // By project and workflow name
             {
-                CommandStatus status = main("sessions",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        project.getName(),
-                        "foobar");
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSession> ss = sessions(project.getName(), "foobar");
+                assertThat(ss.size(), is(1));
+                assertThat(ss.get(0).getId(), is(sessionId));
+                assertThat(ss.get(0).getLastAttempt().get().getId(), is(attemptId));
             }
 
             // By session id
@@ -250,5 +248,19 @@ public class InitPushStartIT
                 assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
             }
         }
+    }
+
+    private List<RestSession> sessions(String... args)
+            throws IOException
+    {
+        CommandStatus status = main(FluentIterable.from(asList(
+                "sessions",
+                "--json",
+                "-c", config.toString(),
+                "-e", server.endpoint()))
+                .append(args)
+                .toList());
+        assertThat(status.code(), is(0));
+        return status.outJson(new TypeReference<List<RestSession>>() {});
     }
 }
