@@ -14,13 +14,11 @@ class TablePrinter
     private final PrintStream out;
     private final List<List<String>> rows = new ArrayList<>();
     private final List<Integer> widths = new ArrayList<>();
-    private final int minWidth;
     private final int margin;
 
     public TablePrinter(PrintStream out)
     {
         this.out = out;
-        this.minWidth = 20;
         this.margin = 2;
     }
 
@@ -64,8 +62,7 @@ class TablePrinter
         for (int i = 0; i < row.size(); i++) {
             int length = row.get(i).length();
             if (widths.size() <= i) {
-                int width = Math.max(minWidth, length);
-                widths.add(width);
+                widths.add(length);
             }
             else {
                 int currentWidth = widths.get(i);
