@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 
+import static acceptance.TestUtils.attempts;
 import static acceptance.TestUtils.copyResource;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.getSessionId;
@@ -205,13 +206,11 @@ public class InitPushStartIT
 
             // By session id
             {
-                CommandStatus status = main("attempts",
-                        "-c", config.toString(),
-                        "-e", server.endpoint(),
-                        String.valueOf(sessionId));
-                assertThat(status.code(), is(0));
-                assertThat(getSessionId(status), is(sessionId));
-                assertThat(getAttemptId(status), is(attemptId));
+                List<RestSessionAttempt> attempts = attempts(String.valueOf(sessionId));
+                assertThat(attempts.size(), is(1));
+                RestSessionAttempt attempt = attempts.get(0);
+                assertThat(attempt.getSessionId(), is(sessionId));
+                assertThat(attempt.getId(), is(attemptId));
             }
         }
 
@@ -239,6 +238,16 @@ public class InitPushStartIT
                 assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
             }
 
+            // For the attempts by session id
+            {
+                List<RestSessionAttempt> attempts = attempts(String.valueOf(sessionId));
+                assertThat(attempts.size(), is(1));
+                RestSessionAttempt attempt = attempts.get(0);
+                assertThat(attempt.getSessionId(), is(sessionId));
+                assertThat(attempt.getId(), is(attemptId));
+                assertThat(attempt.getSuccess(), is(true));
+            }
+
             // For the session
             {
                 CommandStatus attemptsStatus = main("sessions",
@@ -262,5 +271,19 @@ public class InitPushStartIT
                 .toList());
         assertThat(status.code(), is(0));
         return status.outJson(new TypeReference<List<RestSession>>() {});
+    }
+
+    private List<RestSessionAttempt> attempts(String... args)
+            throws IOException
+    {
+        CommandStatus status = main(FluentIterable.from(asList(
+                "attempts",
+                "--json",
+                "-c", config.toString(),
+                "-e", server.endpoint()))
+                .append(args)
+                .toList());
+        assertThat(status.code(), is(0));
+        return status.outJson(new TypeReference<List<RestSessionAttempt>>() {});
     }
 }
