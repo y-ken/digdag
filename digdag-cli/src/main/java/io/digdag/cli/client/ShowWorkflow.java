@@ -83,28 +83,13 @@ public class ShowWorkflow
     }
 
     private void showWorkflowDetails(String projName, String defName)
-        throws Exception
+            throws Exception
     {
         DigdagClient client = buildClient();
 
-        if (projName != null) {
-            RestProject proj = client.getProject(projName);
-            RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
-            String yaml = yamlMapper().toYaml(def.getConfig());
-            ln("%s", yaml);
-        }
-        else {
-            for (RestProject proj : client.getProjects()) {
-                try {
-                    RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
-                    String yaml = yamlMapper().toYaml(def.getConfig());
-                    ln("%s", yaml);
-                    return;
-                }
-                catch (NotFoundException ex) {
-                }
-            }
-            throw systemExit("Workflow definition '" + defName + "' does not exist.");
-        }
+        RestProject proj = client.getProject(projName);
+        RestWorkflowDefinition def = client.getWorkflowDefinition(proj.getId(), defName);
+        String yaml = yamlMapper().toYaml(def.getConfig());
+        ln("%s", yaml);
     }
 }
