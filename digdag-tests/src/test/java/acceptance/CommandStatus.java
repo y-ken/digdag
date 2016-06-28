@@ -6,12 +6,15 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import io.digdag.client.api.JacksonTimeModule;
+import org.hamcrest.Matchers;
 import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+
+import static org.junit.Assert.assertThat;
 
 @Value.Immutable
 public abstract class CommandStatus
@@ -59,6 +62,11 @@ public abstract class CommandStatus
                 .out(out)
                 .err(err)
                 .build();
+    }
+
+    public CommandStatus assertSuccess() {
+        assertThat(errUtf8(), code(), Matchers.is(0));
+        return this;
     }
 
     public <T> T outJson(TypeReference<T> type)

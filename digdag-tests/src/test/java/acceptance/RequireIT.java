@@ -10,8 +10,11 @@ import org.junit.rules.TemporaryFolder;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
+import static acceptance.TestUtils.attemptSuccess;
 import static acceptance.TestUtils.copyResource;
+import static acceptance.TestUtils.expect;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.main;
 import static org.hamcrest.Matchers.is;
@@ -77,19 +80,7 @@ public class RequireIT
         }
 
         // Wait for the attempt to complete
-        boolean success = false;
-        for (int i = 0; i < 30; i++) {
-            CommandStatus attemptsStatus = main("attempts",
-                    "-c", config.toString(),
-                    "-e", server.endpoint(),
-                    String.valueOf(attemptId));
-            success = attemptsStatus.outUtf8().contains("status: success");
-            if (success) {
-                break;
-            }
-            Thread.sleep(1000);
-        }
-        assertThat(success, is(true));
+        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
 
         // Verify that the file created by the child workflow is there
         assertThat(Files.exists(childOutFile), is(true));

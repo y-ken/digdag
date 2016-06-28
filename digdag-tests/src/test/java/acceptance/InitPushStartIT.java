@@ -14,11 +14,13 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-import static acceptance.TestUtils.attempts;
+import static acceptance.TestUtils.attemptSuccess;
 import static acceptance.TestUtils.copyResource;
+import static acceptance.TestUtils.expect;
 import static acceptance.TestUtils.getAttemptId;
 import static acceptance.TestUtils.getSessionId;
 import static acceptance.TestUtils.main;
@@ -215,17 +217,7 @@ public class InitPushStartIT
         }
 
         // Wait for the attempt to complete
-        {
-            RestSessionAttempt attempt = null;
-            for (int i = 0; i < 30; i++) {
-                attempt = client.getSessionAttempt(attemptId);
-                if (attempt.getDone()) {
-                    break;
-                }
-                Thread.sleep(1000);
-            }
-            assertThat(attempt.getSuccess(), is(true));
-        }
+        expect(Duration.ofSeconds(30), attemptSuccess(server.endpoint(), attemptId));
 
         // Verify that the success is reflected in the cli
         {
@@ -238,7 +230,7 @@ public class InitPushStartIT
                 assertThat(attemptsStatus.outUtf8(), containsString("status: success"));
             }
 
-            // For the attempts by session id
+            // For the attempt by session id
             {
                 List<RestSessionAttempt> attempts = attempts(String.valueOf(sessionId));
                 assertThat(attempts.size(), is(1));

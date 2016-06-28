@@ -20,7 +20,7 @@ import java.util.UUID;
 import static acceptance.TestUtils.addWorkflow;
 import static acceptance.TestUtils.attemptFailure;
 import static acceptance.TestUtils.attemptSuccess;
-import static acceptance.TestUtils.attempts;
+import static acceptance.TestUtils.attempt;
 import static acceptance.TestUtils.createProject;
 import static acceptance.TestUtils.expect;
 import static acceptance.TestUtils.main;
@@ -168,7 +168,7 @@ public class TdWaitIT
                 .put("outfile", outfile.toString())
                 .build());
         Thread.sleep(engine.equals("hive") ? 60_000 : 10_000);
-        CommandStatus status = attempts(server.endpoint(), attemptId);
+        CommandStatus status = attempt(server.endpoint(), attemptId);
         assertThat(status.outUtf8(), containsString("status: running"));
         assertThat(Files.exists(outfile), is(false));
     }
@@ -201,7 +201,7 @@ public class TdWaitIT
         // Verify that the workflow does not proceed beyond running
         {
             Thread.sleep(sleep * 1000);
-            CommandStatus attemptsStatus = TestUtils.main("attempts",
+            CommandStatus attemptsStatus = TestUtils.main("attempt",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
                     String.valueOf(attemptId));
@@ -217,7 +217,7 @@ public class TdWaitIT
         // Verify that the workflow still does not proceed beyond running
         {
             Thread.sleep(sleep * 1000);
-            CommandStatus attemptsStatus = TestUtils.main("attempts",
+            CommandStatus attemptsStatus = TestUtils.main("attempt",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
                     String.valueOf(attemptId));
@@ -234,7 +234,7 @@ public class TdWaitIT
         // Verify that the workflow still does not proceed beyond running
         {
             Thread.sleep(sleep * 1000);
-            CommandStatus attemptsStatus = TestUtils.main("attempts",
+            CommandStatus attemptsStatus = TestUtils.main("attempt",
                     "-c", "/dev/null",
                     "-e", server.endpoint(),
                     String.valueOf(attemptId));
