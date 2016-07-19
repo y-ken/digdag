@@ -1,0 +1,193 @@
+package io.digdag.core.database;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import io.digdag.core.SecretCrypto;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import java.nio.ByteBuffer;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.util.Base64;
+
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static javax.crypto.Cipher.ENCRYPT_MODE;
+
+public class AESGCMSecretCrypto implements SecretCrypto
+{
+    private static final Provider PROVIDER = Security.getProvider("SunJCE");
+
+    private final SecretKey sharedSecret;
+
+    private static final int AES_KEY_SIZE = 128;
+    private static final int GCM_NONCE_LENGTH = 12;
+    private static final int GCM_TAG_LENGTH = 16;
+
+    private static final int TERM = 1;
+    private static final int VERSION = 1;
+
+    private static final int MAX_PLAINTEXT_LENGTH = 1024;
+
+    private static final int RECORD_SIZE = 2048;
+    private static final int LENGTH_SIZE = 4;
+    private static final int TEXT_SIZE = RECORD_SIZE - LENGTH_SIZE;
+    private static final int TERM_SIZE = 4;
+    private static final int VERSION_SIZE = 4;
+    private static final int OPAQUE_SIZE = TERM_SIZE + VERSION_SIZE + GCM_NONCE_LENGTH + RECORD_SIZE + GCM_TAG_LENGTH;
+
+    public AESGCMSecretCrypto(String sharedSecretBase64)
+    {
+        byte[] sharedSecretRaw = Base64.getDecoder().decode(sharedSecretBase64);
+        Preconditions.checkArgument(sharedSecretRaw.length * 8 == AES_KEY_SIZE);
+        this.sharedSecret = new SecretKeySpec(sharedSecretRaw, "AES");
+    }
+
+    @Override
+    public String encryptSecret(String plainText)
+    {
+        if (plainText.length() > MAX_PLAINTEXT_LENGTH) {
+            throw new IllegalArgumentException("Too long text");
+        }
+
+        if (!isAscii(plainText)) {
+            throw new IllegalArgumentException("Text must be ASCII");
+        }
+
+        byte[] nonce = generateNonce();
+
+        Cipher cipher = cipher(ENCRYPT_MODE, sharedSecret, nonce);
+
+        byte[] plainTextBytes = plainText.getBytes(US_ASCII);
+
+        byte[] recordBytes = new byte[RECORD_SIZE];
+        ByteBuffer recordBuffer = ByteBuffer.wrap(recordBytes);
+        recordBuffer.putInt(plainTextBytes.length);
+        recordBuffer.put(plainTextBytes);
+
+        byte[] cipherText;
+        try {
+            cipherText = cipher.doFinal(recordBytes);
+        }
+        catch (IllegalBlockSizeException | BadPaddingException e) {
+            throw Throwables.propagate(e);
+        }
+
+        assert cipherText.length == RECORD_SIZE + GCM_TAG_LENGTH;
+
+        byte[] opaque = new byte[OPAQUE_SIZE];
+        ByteBuffer output = ByteBuffer.wrap(opaque);
+
+        output.putInt(TERM);
+        output.putInt(VERSION);
+        output.put(nonce);
+        output.put(cipherText);
+
+        assert output.remaining() == 0;
+
+        return Base64.getEncoder().encodeToString(opaque);
+    }
+
+    private boolean isAscii(String s)
+    {
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c > 127) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public String decryptSecret(String encryptedBase64)
+    {
+        byte[] encrypted = Base64.getDecoder().decode(encryptedBase64);
+        Preconditions.checkArgument(encrypted.length == OPAQUE_SIZE, "Bad size");
+
+        ByteBuffer buffer = ByteBuffer.wrap(encrypted);
+        int term = buffer.getInt();
+        int version = buffer.getInt();
+
+        if (term != TERM) {
+            throw new IllegalArgumentException("Bad term");
+        }
+
+        if (version != VERSION) {
+            throw new IllegalArgumentException("Bad version");
+        }
+
+        byte[] nonce = new byte[GCM_NONCE_LENGTH];
+        buffer.get(nonce);
+
+        Cipher cipher = cipher(Cipher.DECRYPT_MODE, sharedSecret, nonce);
+
+        byte[] recordBytes;
+        try {
+            recordBytes = cipher.doFinal(encrypted, buffer.position(), buffer.remaining());
+        }
+        catch (IllegalBlockSizeException | BadPaddingException e) {
+            throw Throwables.propagate(e);
+        }
+
+        assert recordBytes.length == RECORD_SIZE;
+
+        ByteBuffer decryptedBuffer = ByteBuffer.wrap(recordBytes);
+        int length = decryptedBuffer.getInt();
+        if (length < -1 || length > MAX_PLAINTEXT_LENGTH) {
+            throw new IllegalArgumentException("Bad length");
+        }
+
+        decryptedBuffer.limit(decryptedBuffer.position() + length);
+
+        return US_ASCII.decode(decryptedBuffer).toString();
+    }
+
+    private Cipher cipher(int encryptMode, SecretKey sharedSecret, byte[] nonce)
+    {
+        Cipher result;
+        try {
+            result = Cipher.getInstance("AES/GCM/NoPadding", PROVIDER);
+        }
+        catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
+            throw Throwables.propagate(e1);
+        }
+        Cipher cipher = result;
+
+        GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH * 8, nonce);
+        try {
+            cipher.init(encryptMode, sharedSecret, spec);
+        }
+        catch (InvalidKeyException | InvalidAlgorithmParameterException e) {
+            throw Throwables.propagate(e);
+        }
+        return cipher;
+    }
+
+    private byte[] generateNonce()
+    {
+        byte[] nonce = new byte[GCM_NONCE_LENGTH];
+        secureRandom().nextBytes(nonce);
+        return nonce;
+    }
+
+    private SecureRandom secureRandom()
+    {
+        try {
+            return SecureRandom.getInstanceStrong();
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw Throwables.propagate(e);
+        }
+    }
+}

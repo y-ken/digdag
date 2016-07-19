@@ -15,6 +15,7 @@ import io.digdag.cli.client.Kill;
 import io.digdag.cli.client.Push;
 import io.digdag.cli.client.Reschedule;
 import io.digdag.cli.client.Retry;
+import io.digdag.cli.client.Secrets;
 import io.digdag.cli.client.ShowAttempt;
 import io.digdag.cli.client.ShowAttempts;
 import io.digdag.cli.client.ShowLog;
@@ -27,6 +28,7 @@ import io.digdag.cli.client.Upload;
 import io.digdag.cli.client.Version;
 import org.slf4j.LoggerFactory;
 
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -45,12 +47,14 @@ public class Main
     private final io.digdag.core.Version version;
     private final PrintStream out;
     private final PrintStream err;
+    private final InputStream in;
 
-    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err)
+    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err, InputStream in)
     {
         this.version = version;
         this.out = out;
         this.err = err;
+        this.in = in;
     }
 
     public static class MainOptions
@@ -61,7 +65,7 @@ public class Main
 
     public static void main(String... args)
     {
-        int code = new Main(buildVersion(), System.out, System.err).cli(args);
+        int code = new Main(buildVersion(), System.out, System.err, System.in).cli(args);
         if (code != 0) {
             System.exit(code);
         }
@@ -105,9 +109,14 @@ public class Main
         jc.addCommand("task", new ShowTask(version, out, err), "tasks");
         jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
         jc.addCommand("delete", new Delete(version, out, err));
+        jc.addCommand("secrets", new Secrets(version, out, err, in), "secret");
         jc.addCommand("version", new Version(version, out, err), "version");
 
         jc.addCommand("selfupdate", new SelfUpdate(out, err));
+
+        // Disable @ expansion
+        jc.setExpandAtSign(false);
+        jc.getCommands().values().forEach(c -> c.setExpandAtSign(false));
 
         try {
             try {
