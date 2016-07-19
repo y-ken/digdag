@@ -12,6 +12,7 @@ import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigException;
+import io.digdag.spi.SecretProvider;
 import io.digdag.util.RetryExecutor;
 import io.digdag.util.RetryExecutor.RetryGiveupException;
 
@@ -24,6 +25,7 @@ import static io.digdag.util.RetryExecutor.retryExecutor;
 public class TDOperator
         implements Closeable
 {
+    @Deprecated
     public static TDOperator fromConfig(Config config)
     {
         String database = config.get("database", String.class).trim();
@@ -32,6 +34,18 @@ public class TDOperator
         }
 
         TDClient client = TDClientFactory.clientFromConfig(config);
+
+        return new TDOperator(client, database);
+    }
+
+    public static TDOperator fromConfig(Config config, SecretProvider secrets)
+    {
+        String database = secrets.getSecretOptional("database").or(config.get("database", String.class)).trim();
+        if (database.isEmpty()) {
+            throw new ConfigException("Parameter 'database' is empty");
+        }
+
+        TDClient client = TDClientFactory.clientFromConfig(config, secrets);
 
         return new TDOperator(client, database);
     }
@@ -200,6 +214,8 @@ public class TDOperator
             throw new IllegalArgumentException("domain key must be set");
         }
 
+		// TODO: refresh credentials if access token is expired
+
         return submitNewJobWithRetry(() -> submitNewJob(req));
     }
 
@@ -234,6 +250,13 @@ public class TDOperator
                 .build();
 
         return submitNewJobWithRetry(() -> newJobOperator(client.startSavedQuery(req)));
+    }
+
+
+    public TDJobOperator startBulkLoadSession(String name, long scheduledTime)
+    {
+        // TODO retry with an unique id and ignore conflict
+        return newJobOperator(client.startBulkLoadSession(name, scheduledTime).getJobId());
     }
 
     public TDJobOperator newJobOperator(String jobId)

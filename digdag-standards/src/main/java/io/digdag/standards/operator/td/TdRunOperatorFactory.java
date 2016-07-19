@@ -3,11 +3,11 @@ package io.digdag.standards.operator.td;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJobSummary;
-import com.treasuredata.client.model.TDSavedQueryStartRequest;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -83,9 +83,9 @@ public class TdRunOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
 
                 // Generate and store domain key before starting the job
                 if (!existingDomainKey.isPresent()) {

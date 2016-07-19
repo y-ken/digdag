@@ -5,7 +5,12 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import io.digdag.spi.SecretNotFoundException;
+import io.digdag.spi.TaskExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.digdag.spi.TaskRequest;
@@ -49,7 +54,13 @@ public class TdTableExportOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
+        {
+            return ImmutableList.of("td.*");
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             Config params = request.getConfig().mergeDefault(
                     request.getConfig().getNestedOrGetEmpty("td"));
@@ -78,7 +89,7 @@ public class TdTableExportOperatorFactory
                     params.get("s3_path_prefix", String.class),
                     params.getOptional("pool_name", String.class));
 
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
                 TDJobOperator j = op.submitExportJob(req);
                 logger.info("Started table export job id={}", j.getJobId());
 

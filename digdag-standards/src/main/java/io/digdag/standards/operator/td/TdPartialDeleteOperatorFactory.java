@@ -2,6 +2,7 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobSummary;
@@ -10,6 +11,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 
@@ -79,9 +82,15 @@ public class TdPartialDeleteOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
         {
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            return ImmutableList.of("td.*");
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
+        {
+            try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
 
                 // Start the job
                 if (!existingJobId.isPresent()) {

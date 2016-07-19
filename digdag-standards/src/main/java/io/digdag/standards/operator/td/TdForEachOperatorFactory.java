@@ -2,6 +2,7 @@ package io.digdag.standards.operator.td;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
@@ -15,6 +16,8 @@ import io.digdag.core.Limits;
 import io.digdag.core.workflow.TaskLimitExceededException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.SecretNotFoundException;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -104,9 +107,15 @@ public class TdForEachOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
         {
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            return ImmutableList.of("td.*");
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
+        {
+            try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
 
                 // Generate and store domain key before starting the job
                 if (!existingDomainKey.isPresent()) {

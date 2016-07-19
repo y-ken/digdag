@@ -3,9 +3,8 @@ package io.digdag.standards.operator.td;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
-import com.treasuredata.client.TDClient;
-import com.treasuredata.client.model.TDBulkLoadSessionStartResult;
 import com.treasuredata.client.model.TDJob;
 import com.treasuredata.client.model.TDJobRequest;
 import com.treasuredata.client.model.TDJobSummary;
@@ -14,6 +13,7 @@ import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskExecutionException;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -125,13 +126,19 @@ public class TdLoadOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
+        {
+            return ImmutableList.of("td.*");
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
         {
             // TODO: TDOperator requires database to be configured but the database param is not necessary when using a connector session
 
             // TODO: A lot of code is duplicated from TDOperatorFactory. Refactor shared logic into reusable components.
 
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
 
                 // Generate and store domain key before starting the job
                 if (!existingDomainKey.isPresent()) {
@@ -181,40 +188,32 @@ public class TdLoadOperatorFactory
             assert Stream.of(embulkConfig, sessionName).filter(Optional::isPresent).count() == 1;
 
             if (embulkConfig.isPresent()) {
-                return startBulkLoad(params, embulkConfig.get());
+                return startBulkLoad(op, embulkConfig.get());
             } else if (sessionName.isPresent()) {
-                return startBulkLoadSession(params, sessionName.get(), request);
+                return startBulkLoadSession(op, sessionName.get(), request);
             } else {
                 throw new AssertionError();
             }
         }
 
-        private String startBulkLoadSession(Config params, String name, TaskRequest request)
+        private String startBulkLoadSession(TDOperator op, String name, TaskRequest request)
         {
-            try (TDClient client = TDClientFactory.clientFromConfig(params)) {
-
-                TDBulkLoadSessionStartResult r =
-                        client.startBulkLoadSession(name, request.getSessionTime().getEpochSecond());
-
-                logger.info("Started bulk load session job name={}, id={}", name, r.getJobId());
-
-                return r.getJobId();
-            }
+            TDJobOperator j = op.startBulkLoadSession(name, request.getSessionTime().getEpochSecond());
+            logger.info("Started bulk load session job name={}, id={}", name, j.getJobId());
+            return j.getJobId();
         }
 
-        private String startBulkLoad(Config params, ObjectNode embulkConfig)
+        private String startBulkLoad(TDOperator op, ObjectNode embulkConfig)
         {
             TableParam table = params.get("table", TableParam.class);
 
-            try (TDOperator op = TDOperator.fromConfig(params)) {
-                TDJobRequest req = TDJobRequest
-                    .newBulkLoad(table.getDatabase().or(op.getDatabase()), table.getTable(), embulkConfig);
+            TDJobRequest req = TDJobRequest.newBulkLoad(
+                    table.getDatabase().or(op.getDatabase()), table.getTable(), embulkConfig);
 
-                TDJobOperator j = op.submitNewJob(req);
-                logger.info("Started bulk load job id={}", j.getJobId());
+            TDJobOperator j = op.submitNewJob(req);
+            logger.info("Started bulk load job id={}", j.getJobId());
 
-                return j.getJobId();
-            }
+            return j.getJobId();
         }
 
         private ObjectNode compileEmbulkConfig(Config params, String command)

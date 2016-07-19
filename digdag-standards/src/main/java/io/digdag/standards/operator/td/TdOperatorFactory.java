@@ -12,12 +12,18 @@ import java.io.Writer;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
 import java.io.IOException;
+
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.treasuredata.client.TDClient;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.spi.SecretNotFoundException;
+import io.digdag.spi.SecretProvider;
+import io.digdag.spi.TaskExecutionContext;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
 import io.digdag.spi.Operator;
@@ -42,8 +48,6 @@ import org.msgpack.value.MapValue;
 import org.msgpack.value.RawValue;
 import org.msgpack.value.ValueFactory;
 
-import static io.digdag.standards.operator.td.TDOperator.escapeHiveTableName;
-import static io.digdag.standards.operator.td.TDOperator.escapePrestoTableName;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static io.digdag.spi.TaskExecutionException.buildExceptionErrorConfig;
 import static io.digdag.standards.operator.td.TDOperator.escapeHiveIdent;
@@ -139,9 +143,15 @@ public class TdOperatorFactory
         }
 
         @Override
-        public TaskResult runTask()
+        public List<String> secretSelectors()
         {
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            return ImmutableList.of("td.*");
+        }
+
+        @Override
+        public TaskResult runTask(TaskExecutionContext ctx)
+        {
+            try (TDOperator op = TDOperator.fromConfig(params, ctx.secrets().getSecrets("td"))) {
 
                 // Generate and store domain key before starting the job
                 if (!existingDomainKey.isPresent()) {

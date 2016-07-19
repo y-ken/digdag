@@ -14,6 +14,8 @@ import java.util.Map;
 
 public class TDOperatorTest
 {
+    // TODO: update these tests to use secrets
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
