@@ -1,15 +1,13 @@
 package io.digdag.server.rs;
 
+import java.io.InputStreamReader;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.net.URI;
 import java.time.Instant;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.nio.file.Files;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -19,15 +17,15 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.PUT;
 import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.Response;
+
+import com.google.common.io.CharStreams;
 import com.google.inject.Inject;
-import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
@@ -47,9 +45,10 @@ import io.digdag.core.TempFileManager;
 import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.client.api.*;
+import io.digdag.spi.SecretControlStore;
+import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
-import io.digdag.spi.DirectDownloadHandle;
 import io.digdag.util.Md5CountInputStream;
 import io.digdag.server.GenericJsonExceptionHandler;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -57,7 +56,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 
 import static io.digdag.server.rs.RestModels.sessionModels;
-import static io.digdag.util.Md5CountInputStream.digestMd5;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -78,6 +77,9 @@ public class ProjectResource
     // GET  /api/projects/{id}/archive                   # download archive file of the latest revision of a project
     // GET  /api/projects/{id}/archive?revision=<name>   # download archive file of a former revision of a project
     // PUT  /api/projects?project=<name>&revision=<name> # create a new revision (also create a project if it doesn't exist)
+    // GET  /api/projects/{id}/secrets                   # list secrets for a project
+    // PUT  /api/projects/{id}/secrets/<key>             # set a secret for a project
+    // DEL  /api/projects/{id}/secrets/<key>             # delete a secret for a project
     //
     // Deprecated:
     // GET  /api/project?name=<name>                     # lookup a project by name
@@ -86,6 +88,9 @@ public class ProjectResource
 
     private static final int ARCHIVE_TOTAL_SIZE_LIMIT = 2 * 1024 * 1024;
     private static final int ARCHIVE_FILE_SIZE_LIMIT = ARCHIVE_TOTAL_SIZE_LIMIT;
+
+    private static final int SECRET_KEY_SIZE_LIMIT = 128;
+    private static final int SECRET_VALUE_SIZE_LIMIT = 1024;
 
     private final ConfigFactory cf;
     private final YamlConfigLoader rawLoader;
@@ -96,6 +101,7 @@ public class ProjectResource
     private final SchedulerManager srm;
     private final TempFileManager tempFiles;
     private final SessionStoreManager ssm;
+    private final SecretControlStoreManager scsp;
 
     @Inject
     public ProjectResource(
@@ -107,7 +113,8 @@ public class ProjectResource
             ScheduleStoreManager sm,
             SchedulerManager srm,
             TempFileManager tempFiles,
-            SessionStoreManager ssm)
+            SessionStoreManager ssm,
+            SecretControlStoreManager scsp)
     {
         this.cf = cf;
         this.rawLoader = rawLoader;
@@ -118,6 +125,7 @@ public class ProjectResource
         this.sm = sm;
         this.tempFiles = tempFiles;
         this.ssm = ssm;
+        this.scsp = scsp;
     }
 
     private static StoredProject ensureNotDeletedProject(StoredProject proj)
@@ -509,5 +517,76 @@ public class ProjectResource
                         "Size of a file in the archive exceeds limit (%d > %d bytes): %s",
                         entry.getSize(), ARCHIVE_FILE_SIZE_LIMIT, entry.getName()));
         }
+    }
+
+    @PUT
+    @Consumes("text/plain")
+    @Path("/api/projects/{id}/secrets/{key}")
+    public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key,
+            InputStream body, @HeaderParam("Content-Length") long contentLength)
+            throws IOException, ResourceConflictException, ResourceNotFoundException
+    {
+        if (key.length() > SECRET_KEY_SIZE_LIMIT) {
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                    "Size of the secret key exceeds limit (%d bytes)",
+                    SECRET_KEY_SIZE_LIMIT));
+        }
+
+        if (contentLength > SECRET_VALUE_SIZE_LIMIT) {
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                    "Size of the secret value exceeds limit (%d bytes)",
+                    SECRET_VALUE_SIZE_LIMIT));
+        }
+
+        // Verify that the project exists
+        ProjectStore projectStore = rm.getProjectStore(getSiteId());
+        StoredProject project = projectStore.getProjectById(projectId);
+        ensureNotDeletedProject(project);
+
+        String value = CharStreams.toString(new InputStreamReader(body, UTF_8));
+
+        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
+
+        store.setProjectSecret(projectId, key, value);
+    }
+
+    @DELETE
+    @Path("/api/projects/{id}/secrets/{key}")
+    public void deleteProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key)
+            throws IOException, ResourceConflictException, ResourceNotFoundException
+    {
+        if (key.length() > SECRET_KEY_SIZE_LIMIT) {
+            throw new IllegalArgumentException(String.format(ENGLISH,
+                    "Size of the secret key exceeds limit (%d bytes)",
+                    SECRET_KEY_SIZE_LIMIT));
+        }
+
+        // Verify that the project exists
+        ProjectStore projectStore = rm.getProjectStore(getSiteId());
+        StoredProject project = projectStore.getProjectById(projectId);
+        ensureNotDeletedProject(project);
+
+        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
+
+        store.deleteProjectSecret(projectId, key);
+    }
+
+    @GET
+    @Path("/api/projects/{id}/secrets")
+    @Produces("application/json")
+    public RestSecretList getProjectSecrets(@PathParam("id") int projectId)
+            throws IOException, ResourceConflictException, ResourceNotFoundException
+    {
+        // Verify that the project exists
+        ProjectStore projectStore = rm.getProjectStore(getSiteId());
+        StoredProject project = projectStore.getProjectById(projectId);
+        ensureNotDeletedProject(project);
+
+        SecretControlStore store = scsp.getSecretControlStore(getSiteId());
+        List<String> keys = store.listProjectSecrets(projectId);
+
+        return RestSecretList.builder()
+                .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))
+                .build();
     }
 }

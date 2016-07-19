@@ -1,8 +1,8 @@
 package io.digdag.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
@@ -10,6 +10,7 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleBackfillRequest;
@@ -534,6 +535,51 @@ public class DigdagClient implements AutoCloseable
                 target("/api/version"));
     }
 
+    public void setProjectSecret(int projectId, String key, String value)
+    {
+        if (key.isEmpty() || value.isEmpty() || !isAscii(key) || !isAscii(value)) {
+            throw new IllegalArgumentException();
+        }
+
+        Response response = target("/api/projects/{id}/secrets/{key}")
+                .resolveTemplate("id", projectId)
+                .resolveTemplate("key", key)
+                .request()
+                .headers(headers.get())
+                .put(Entity.entity(value, "text/plain"));
+        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            // TODO: appropriate exception type
+            throw new RuntimeException("Failed to set project secret: " + response.getStatusInfo());
+        }
+    }
+
+    public void deleteProjectSecret(int projectId, String key)
+    {
+        if (!isAscii(key)) {
+            throw new IllegalArgumentException(key);
+        }
+
+        Response response = target("/api/projects/{id}/secrets/{key}")
+                .resolveTemplate("id", projectId)
+                .resolveTemplate("key", key)
+                .request()
+                .headers(headers.get())
+                .delete();
+        if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
+            // TODO: appropriate exception type
+            throw new RuntimeException("Failed to delete project secret: " + response.getStatusInfo());
+        }
+    }
+
+    public RestSecretList listProjectSecrets(int projectId)
+    {
+        return target("/api/projects/{id}/secrets")
+                .resolveTemplate("id", projectId)
+                .request("application/json")
+                .headers(headers.get())
+                .get(RestSecretList.class);
+    }
+
     private WebTarget target(String path)
     {
         return client.target(UriBuilder.fromUri(endpoint + path));
@@ -586,5 +632,16 @@ public class DigdagClient implements AutoCloseable
         return target.request("application/json")
             .headers(headers.get())
             .delete(type);
+    }
+
+    private static boolean isAscii(String s)
+    {
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c > 127) {
+                return false;
+            }
+        }
+        return true;
     }
 }
