@@ -1,18 +1,27 @@
 package io.digdag.core.database;
 
+import com.google.common.collect.ImmutableMap;
 import io.digdag.core.SecretCrypto;
-import io.digdag.core.repository.ResourceNotFoundException;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretAccessDeniedException;
+import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 class DatabaseSecretStore
         extends BasicDatabaseStoreManager<DatabaseSecretStore.Dao>
         implements SecretStore
 {
+    private static final Map<String, Integer> PRIORITIES = ImmutableMap.of(
+            SecretScopes.PROJECT, 0,
+            SecretScopes.USER_DEFAULT, 1);
+
     private final int siteId;
 
     private final SecretCrypto crypto;
@@ -31,24 +40,36 @@ class DatabaseSecretStore
             throw new SecretAccessDeniedException("Site id mismatch");
         }
 
-        String encrypted;
+        List<ScopedSecret> secrets = autoCommit((handle, dao) -> dao.getProjectSecrets(siteId, context.projectId(), key));
 
-        try {
-            encrypted = requiredResource(
-                    (handle, dao) -> dao.getProjectSecret(siteId, context.projectId(), key),
-                    "secret with key=%s in project id=%d", key, context.projectId());
-        }
-        catch (ResourceNotFoundException e) {
+        Optional<ScopedSecret> secret = secrets.stream()
+                .filter(s -> PRIORITIES.containsKey(s.scope))
+                .sorted((a, b) -> PRIORITIES.get(a.scope) - PRIORITIES.get(b.scope))
+                .findFirst();
+
+        if (!secret.isPresent()) {
             return null;
         }
 
-        return crypto.decryptSecret(encrypted);
+        return crypto.decryptSecret(secret.get().value);
     }
 
     interface Dao
     {
-        @SqlQuery("select value from secrets" +
+        @SqlQuery("select scope, value from secrets" +
                 " where site_id = :siteId and project_id = :projectId and key = :key")
-        String getProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("key") String key);
+        List<ScopedSecret> getProjectSecrets(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("key") String key);
+    }
+
+    private static class ScopedSecret
+    {
+        private final String scope;
+        private final String value;
+
+        private ScopedSecret(String scope, String value)
+        {
+            this.scope = scope;
+            this.value = value;
+        }
     }
 }

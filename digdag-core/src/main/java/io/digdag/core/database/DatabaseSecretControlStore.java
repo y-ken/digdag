@@ -24,45 +24,45 @@ class DatabaseSecretControlStore
     }
 
     @Override
-    public void setProjectSecret(int projectId, String key, String value)
+    public void setProjectSecret(int projectId, String scope, String key, String value)
     {
         String encrypted = crypto.encryptSecret(value);
 
         transaction((handle, dao, ts) -> {
-            dao.deleteProjectSecret(siteId, projectId, key);
-            dao.insertProjectSecret(siteId, projectId, key, encrypted);
+            dao.deleteProjectSecret(siteId, projectId, scope, key);
+            dao.insertProjectSecret(siteId, projectId, scope, key, encrypted);
             return null;
         });
     }
 
     @Override
-    public void deleteProjectSecret(int projectId, String key)
+    public void deleteProjectSecret(int projectId, String scope, String key)
     {
         transaction((handle, dao, ts) -> {
-            dao.deleteProjectSecret(siteId, projectId, key);
+            dao.deleteProjectSecret(siteId, projectId, scope, key);
             return null;
         });
     }
 
     @Override
-    public List<String> listProjectSecrets(int projectId)
+    public List<String> listProjectSecrets(int projectId, String scope)
     {
-        return transaction((handle, dao, ts) -> dao.listProjectSecrets(siteId, projectId));
+        return transaction((handle, dao, ts) -> dao.listProjectSecrets(siteId, projectId, scope));
     }
 
     interface Dao
     {
         @SqlQuery("select key from secrets" +
-                " where site_id = :siteId and project_id = :projectId")
-        List<String> listProjectSecrets(@Bind("siteId") int siteId, @Bind("projectId") int projectId);
+                " where site_id = :siteId and project_id = :projectId and scope = :scope")
+        List<String> listProjectSecrets(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope);
 
         @SqlUpdate("delete from secrets" +
-                " where site_id = :siteId and project_id = :projectId and key = :key")
-        int deleteProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("key") String key);
+                " where site_id = :siteId and project_id = :projectId and scope = :scope and key = :key")
+        int deleteProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key);
 
         @SqlUpdate("insert into secrets" +
-                " (site_id, project_id, key, value, updated_at)" +
-                " values (:siteId, :projectId, :key, :value, now())")
-        int insertProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("key") String key, @Bind("value") String value);
+                " (site_id, project_id, scope, key, value, updated_at)" +
+                " values (:siteId, :projectId, :scope, :key, :value, now())")
+        int insertProjectSecret(@Bind("siteId") int siteId, @Bind("projectId") int projectId, @Bind("scope") String scope, @Bind("key") String key, @Bind("value") String value);
     }
 }

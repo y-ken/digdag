@@ -2,6 +2,7 @@ package io.digdag.server.rs;
 
 import java.io.InputStreamReader;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.time.Instant;
 import java.io.IOException;
@@ -47,6 +48,7 @@ import io.digdag.core.TempFileManager.TempDir;
 import io.digdag.client.api.*;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
+import io.digdag.spi.SecretScopes;
 import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
 import io.digdag.util.Md5CountInputStream;
@@ -455,6 +457,11 @@ public class ProjectResource
                             lockedProj.insertWorkflowDefinitions(rev,
                                     meta.getWorkflowList().get(),
                                     srm, Instant.now());
+
+                        SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
+                        Map<String, String> secrets = getSecrets();
+                        secrets.forEach((k, v) -> secretControlStore.setProjectSecret(storedProject.getId(), SecretScopes.USER_DEFAULT, k, v));
+
                         return RestModels.project(storedProject, rev);
                     });
         }
@@ -547,7 +554,7 @@ public class ProjectResource
 
         SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
-        store.setProjectSecret(projectId, key, value);
+        store.setProjectSecret(projectId, SecretScopes.PROJECT, key, value);
     }
 
     @DELETE
@@ -568,7 +575,7 @@ public class ProjectResource
 
         SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
-        store.deleteProjectSecret(projectId, key);
+        store.deleteProjectSecret(projectId, SecretScopes.PROJECT, key);
     }
 
     @GET
@@ -583,7 +590,7 @@ public class ProjectResource
         ensureNotDeletedProject(project);
 
         SecretControlStore store = scsp.getSecretControlStore(getSiteId());
-        List<String> keys = store.listProjectSecrets(projectId);
+        List<String> keys = store.listProjectSecrets(projectId, SecretScopes.PROJECT);
 
         return RestSecretList.builder()
                 .secrets(keys.stream().map(RestSecretMetadata::of).collect(Collectors.toList()))

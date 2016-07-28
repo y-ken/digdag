@@ -749,12 +749,13 @@ public class DatabaseMigrator
                             .addLongId("id")
                             .addLong("site_id", "not null")
                             .addLong("project_id", "not null references projects (id)")
+                            .addString("scope", "not null")
                             .addString("key", "not null")
                             .addLongText("value", "not null")
                             .addTimestamp("updated_at", "not null")
                             .build());
 
-            handle.update("create index secrets_on_site_id_and_project_id_and_key on secrets (site_id, project_id, key)");
+            handle.update("create index secrets_on_site_id_and_project_id_and_scope_and_key on secrets (site_id, project_id, scope, key)");
         }
     };
 
