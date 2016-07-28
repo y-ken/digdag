@@ -26,8 +26,6 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
 
 public class AESGCMSecretCrypto implements SecretCrypto
 {
-    private static final Provider PROVIDER = Security.getProvider("SunJCE");
-
     private final SecretKey sharedSecret;
 
     private static final int AES_KEY_SIZE = 128;
@@ -157,7 +155,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
     {
         Cipher result;
         try {
-            result = Cipher.getInstance("AES/GCM/NoPadding", PROVIDER);
+            result = Cipher.getInstance("AES/GCM/NoPadding");
         }
         catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
             throw Throwables.propagate(e1);
