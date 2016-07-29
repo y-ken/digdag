@@ -3,7 +3,6 @@ package io.digdag.core.database;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import io.digdag.core.SecretCrypto;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -27,6 +26,8 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
 
 public class AESGCMSecretCrypto implements SecretCrypto
 {
+    private final SecretKey sharedSecret;
+
     private static final int AES_KEY_SIZE = 128;
     private static final int GCM_NONCE_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 16;
@@ -43,13 +44,8 @@ public class AESGCMSecretCrypto implements SecretCrypto
     private static final int VERSION_SIZE = 4;
     private static final int OPAQUE_SIZE = TERM_SIZE + VERSION_SIZE + GCM_NONCE_LENGTH + RECORD_SIZE + GCM_TAG_LENGTH;
 
-    private final SecretKey sharedSecret;
-
-    private final Provider provider;
-
     public AESGCMSecretCrypto(String sharedSecretBase64)
     {
-        this.provider = new BouncyCastleProvider();
         byte[] sharedSecretRaw = Base64.getDecoder().decode(sharedSecretBase64);
         Preconditions.checkArgument(sharedSecretRaw.length * 8 == AES_KEY_SIZE);
         this.sharedSecret = new SecretKeySpec(sharedSecretRaw, "AES");
@@ -159,7 +155,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
     {
         Cipher result;
         try {
-            result = Cipher.getInstance("AES/GCM/NoPadding", provider);
+            result = Cipher.getInstance("AES/GCM/NoPadding");
         }
         catch (NoSuchAlgorithmException | NoSuchPaddingException e1) {
             throw Throwables.propagate(e1);
