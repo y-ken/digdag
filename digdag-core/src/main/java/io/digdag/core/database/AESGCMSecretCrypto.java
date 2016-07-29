@@ -175,17 +175,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
     private byte[] generateNonce()
     {
         byte[] nonce = new byte[GCM_NONCE_LENGTH];
-        secureRandom().nextBytes(nonce);
+        new SecureRandom().nextBytes(nonce);
         return nonce;
-    }
-
-    private SecureRandom secureRandom()
-    {
-        try {
-            return SecureRandom.getInstance("NativePRNGNonBlocking");
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw Throwables.propagate(e);
-        }
     }
 }
