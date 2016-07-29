@@ -104,6 +104,11 @@ subprojects {
             info.events = ["started", "passed", "skipped", "failed", "standardOut", "standardError"]
         }
 
+        forkEvery = 1
+        maxParallelForks = 2
+        minHeapSize = "256m"
+        maxHeapSize = "256m"
+
         // Shard test classes over CI workers
         if (System.env.CI_NODE_INDEX != null) {
             def n = Integer.parseInt(System.env.CI_NODE_TOTAL)
