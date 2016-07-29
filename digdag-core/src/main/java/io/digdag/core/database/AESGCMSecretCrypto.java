@@ -186,7 +186,7 @@ public class AESGCMSecretCrypto implements SecretCrypto
     private SecureRandom secureRandom()
     {
         try {
-            return SecureRandom.getInstanceStrong();
+            return SecureRandom.getInstance("NativePRNGNonBlocking");
         }
         catch (NoSuchAlgorithmException e) {
             throw Throwables.propagate(e);
