@@ -4,6 +4,7 @@ docker run \
 -w /digdag \
 -v `pwd`/:/digdag \
 -v ~/.gradle:/root/.gradle \
+-e TZ=JST \
 -e TD_API_KEY="${TD_API_KEY}" \
 -e TD_LOAD_IT_SFTP_USER="${TD_LOAD_IT_SFTP_USER}" \
 -e TD_LOAD_IT_SFTP_PASSWORD="${TD_LOAD_IT_SFTP_PASSWORD}" \
