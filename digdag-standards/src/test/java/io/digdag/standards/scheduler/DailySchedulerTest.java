@@ -50,6 +50,16 @@ public class DailySchedulerTest
                         instant("2016-02-03 00:00:00 +0000"),
                         instant("2016-02-03 10:00:00 +0000"))));
 
+        // current time is 01:00:00
+        // schedule is 10:00:00 every day
+        // schedule at today 10:00:00
+        Instant currentTime3 = instant("2016-02-03 01:00:00 +0000");
+        assertThat(
+                newScheduler("10:00:00", "UTC").getFirstScheduleTime(currentTime3),
+                is(ScheduleTime.of(
+                        instant("2016-02-03 00:00:00 +0000"),
+                        instant("2016-02-03 10:00:00 +0000"))));
+
         // current time is 16:00:00
         // schedule is 10:00:00 every day
         // schedule at tomorrow 10:00:00
