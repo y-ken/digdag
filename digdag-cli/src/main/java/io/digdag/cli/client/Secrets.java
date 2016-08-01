@@ -31,6 +31,9 @@ import static java.lang.Boolean.TRUE;
 public class Secrets
         extends ClientCommand
 {
+    @Parameter(names = {"--project"}, required = true)
+    String projectName = null;
+
     @Parameter(names = {"--set"}, variableArity = true)
     List<String> set = new ArrayList<>();
 
@@ -49,11 +52,9 @@ public class Secrets
     public void mainWithClientException()
             throws Exception
     {
-        if (args.size() != 1) {
+        if (args.size() != 0) {
             throw usage(null);
         }
-
-        String projectName = args.get(0);
 
         DigdagClient client = buildClient();
         RestProject project = client.getProject(projectName);
@@ -164,13 +165,20 @@ public class Secrets
                 continue;
             }
 
-            // A key=value
-            List<String> tuple = Splitter.on('=').splitToList(s);
-            if (tuple.size() != 2) {
-                throw usage(null);
+            //
+            int equalsIndex = s.indexOf('=');
+            if (equalsIndex == -1) {
+                if (inConsumed) {
+                    throw usage("Stdin already read");
+                }
+                String value = new String(System.console().readPassword(s + ":"));
+                setSecrets.put(s, value);
+                continue;
             }
-            String key = tuple.get(0);
-            String value = tuple.get(1);
+
+            // A key=value
+            String key = s.substring(0, equalsIndex);
+            String value = s.substring(equalsIndex + 1, s.length());
             if (key.isEmpty() || value.isEmpty()) {
                 throw usage(null);
             }

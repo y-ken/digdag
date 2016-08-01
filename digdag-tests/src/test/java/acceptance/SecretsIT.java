@@ -206,7 +206,7 @@ public class SecretsIT
         CommandStatus setStatus = main("secrets",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                projectName,
+                "--project", projectName,
                 "--set", key1 + '=' + value1, key2 + '=' + value2);
         assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
 

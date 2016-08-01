@@ -11,6 +11,8 @@ import io.digdag.server.ServerSecretAccessPolicy.OperatorSecretAccessPolicy;
 import io.digdag.spi.SecretAccessContext;
 import io.digdag.spi.SecretAccessPolicy;
 import io.digdag.spi.SecretSelector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +26,8 @@ import java.util.regex.Pattern;
 public class DefaultSecretAccessPolicy
         implements SecretAccessPolicy
 {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultSecretAccessPolicy.class);
+
     private final ServerSecretAccessPolicy policy;
 
     @Inject
@@ -78,7 +82,11 @@ public class DefaultSecretAccessPolicy
             }
         }
 
-        return builder.build();
+        ServerSecretAccessPolicy policy = builder.build();
+
+        logger.info("loaded secret access policy: {}", policy);
+
+        return policy;
     }
 
     private static ServerSecretAccessPolicy readPolicy(ObjectMapper mapper, Path path)

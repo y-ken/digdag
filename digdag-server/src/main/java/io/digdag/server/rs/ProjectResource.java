@@ -1,64 +1,80 @@
 package io.digdag.server.rs;
 
-import java.io.InputStreamReader;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.time.Instant;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.BufferedInputStream;
-import java.nio.file.Files;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.PUT;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.core.StreamingOutput;
-import javax.ws.rs.core.Response;
-
-import com.google.common.io.CharStreams;
-import com.google.inject.Inject;
-import com.google.common.collect.*;
-import com.google.common.io.ByteStreams;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.ByteStreams;
+import com.google.inject.Inject;
+import io.digdag.client.api.RestProject;
+import io.digdag.client.api.RestRevision;
+import io.digdag.client.api.RestSecretList;
+import io.digdag.client.api.RestSecretMetadata;
+import io.digdag.client.api.RestSession;
+import io.digdag.client.api.RestSetSecretRequest;
+import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
+import io.digdag.core.TempFileManager;
+import io.digdag.core.TempFileManager.TempDir;
+import io.digdag.core.TempFileManager.TempFile;
 import io.digdag.core.archive.ArchiveMetadata;
+import io.digdag.core.config.YamlConfigLoader;
+import io.digdag.core.repository.ArchiveType;
+import io.digdag.core.repository.Project;
+import io.digdag.core.repository.ProjectControl;
+import io.digdag.core.repository.ProjectStore;
+import io.digdag.core.repository.ProjectStoreManager;
+import io.digdag.core.repository.ResourceConflictException;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.repository.Revision;
+import io.digdag.core.repository.StoredProject;
+import io.digdag.core.repository.StoredRevision;
+import io.digdag.core.repository.StoredWorkflowDefinition;
+import io.digdag.core.schedule.ScheduleStoreManager;
+import io.digdag.core.schedule.SchedulerManager;
 import io.digdag.core.session.SessionStore;
 import io.digdag.core.session.SessionStoreManager;
 import io.digdag.core.session.StoredSessionWithLastAttempt;
-import io.digdag.core.workflow.*;
-import io.digdag.core.repository.*;
-import io.digdag.core.schedule.*;
-import io.digdag.core.config.YamlConfigLoader;
 import io.digdag.core.storage.ArchiveManager;
-import io.digdag.core.TempFileManager;
-import io.digdag.core.TempFileManager.TempFile;
-import io.digdag.core.TempFileManager.TempDir;
-import io.digdag.client.api.*;
+import io.digdag.core.workflow.WorkflowCompiler;
+import io.digdag.server.GenericJsonExceptionHandler;
 import io.digdag.spi.SecretControlStore;
 import io.digdag.spi.SecretControlStoreManager;
 import io.digdag.spi.SecretScopes;
-import io.digdag.spi.StorageObject;
 import io.digdag.spi.StorageFileNotFoundException;
+import io.digdag.spi.StorageObject;
 import io.digdag.util.Md5CountInputStream;
-import io.digdag.server.GenericJsonExceptionHandler;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.InternalServerErrorException;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
+
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static io.digdag.client.api.RestSetSecretRequest.isAscii;
 import static io.digdag.server.rs.RestModels.sessionModels;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Locale.ENGLISH;
 
 @Path("/")
@@ -419,7 +435,7 @@ public class ProjectResource
                 }
             }
 
-            return rm.getProjectStore(getSiteId()).putAndLockProject(
+            RestProject restProject = rm.getProjectStore(getSiteId()).putAndLockProject(
                     Project.of(name),
                     (store, storedProject) -> {
                         ProjectControl lockedProj = new ProjectControl(store, storedProject);
@@ -435,37 +451,39 @@ public class ProjectResource
                             }
                             rev = lockedProj.insertRevision(
                                     Revision.builderFromArchive(revision, meta, getUserInfo())
-                                        .archiveType(ArchiveType.DB)
-                                        .archivePath(Optional.absent())
-                                        .archiveMd5(Optional.of(md5))
-                                        .build()
-                                    );
+                                            .archiveType(ArchiveType.DB)
+                                            .archivePath(Optional.absent())
+                                            .archiveMd5(Optional.of(md5))
+                                            .build()
+                            );
                             lockedProj.insertRevisionArchiveData(rev.getId(), data);
                         }
                         else {
                             // store location of the uploaded file in db
                             rev = lockedProj.insertRevision(
                                     Revision.builderFromArchive(revision, meta, getUserInfo())
-                                        .archiveType(location.getArchiveType())
-                                        .archivePath(Optional.of(location.getPath()))
-                                        .archiveMd5(Optional.of(md5))
-                                        .build()
-                                    );
+                                            .archiveType(location.getArchiveType())
+                                            .archivePath(Optional.of(location.getPath()))
+                                            .archiveMd5(Optional.of(md5))
+                                            .build()
+                            );
                         }
 
                         List<StoredWorkflowDefinition> defs =
-                            lockedProj.insertWorkflowDefinitions(rev,
-                                    meta.getWorkflowList().get(),
-                                    srm, Instant.now());
-
-                        SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
-                        Map<String, String> secrets = getSecrets();
-                        if (secrets != null) {
-                            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(storedProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
-                        }
+                                lockedProj.insertWorkflowDefinitions(rev,
+                                        meta.getWorkflowList().get(),
+                                        srm, Instant.now());
 
                         return RestModels.project(storedProject, rev);
                     });
+
+            SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
+            Map<String, String> secrets = getSecrets();
+            if (secrets != null) {
+                secrets.forEach((k, v) -> secretControlStore.setProjectSecret(restProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
+            }
+
+            return restProject;
         }
     }
 
@@ -529,10 +547,9 @@ public class ProjectResource
     }
 
     @PUT
-    @Consumes("text/plain")
+    @Consumes("application/json")
     @Path("/api/projects/{id}/secrets/{key}")
-    public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key,
-            InputStream body, @HeaderParam("Content-Length") long contentLength)
+    public void putProjectSecret(@PathParam("id") int projectId, @PathParam("key") String key, RestSetSecretRequest request)
             throws IOException, ResourceConflictException, ResourceNotFoundException
     {
         if (key.length() > SECRET_KEY_SIZE_LIMIT) {
@@ -541,10 +558,18 @@ public class ProjectResource
                     SECRET_KEY_SIZE_LIMIT));
         }
 
-        if (contentLength > SECRET_VALUE_SIZE_LIMIT) {
+        if (request.value().length() > SECRET_VALUE_SIZE_LIMIT) {
             throw new IllegalArgumentException(String.format(ENGLISH,
                     "Size of the secret value exceeds limit (%d bytes)",
                     SECRET_VALUE_SIZE_LIMIT));
+        }
+
+        if (!isAscii(key)) {
+            throw new IllegalArgumentException("Secret key must be ASCII");
+        }
+
+        if (!isAscii(request.value())) {
+            throw new IllegalArgumentException("Secret value must be ASCII");
         }
 
         // Verify that the project exists
@@ -552,11 +577,9 @@ public class ProjectResource
         StoredProject project = projectStore.getProjectById(projectId);
         ensureNotDeletedProject(project);
 
-        String value = CharStreams.toString(new InputStreamReader(body, UTF_8));
-
         SecretControlStore store = scsp.getSecretControlStore(getSiteId());
 
-        store.setProjectSecret(projectId, SecretScopes.PROJECT, key, value);
+        store.setProjectSecret(projectId, SecretScopes.PROJECT, key, request.value());
     }
 
     @DELETE
@@ -568,6 +591,10 @@ public class ProjectResource
             throw new IllegalArgumentException(String.format(ENGLISH,
                     "Size of the secret key exceeds limit (%d bytes)",
                     SECRET_KEY_SIZE_LIMIT));
+        }
+
+        if (!isAscii(key)) {
+            throw new IllegalArgumentException("Secret key must be ASCII");
         }
 
         // Verify that the project exists

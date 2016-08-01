@@ -10,15 +10,16 @@ import io.digdag.client.api.JacksonTimeModule;
 import io.digdag.client.api.LocalTimeOrInstant;
 import io.digdag.client.api.RestLogFileHandle;
 import io.digdag.client.api.RestProject;
-import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestRevision;
 import io.digdag.client.api.RestSchedule;
 import io.digdag.client.api.RestScheduleBackfillRequest;
 import io.digdag.client.api.RestScheduleSkipRequest;
 import io.digdag.client.api.RestScheduleSummary;
+import io.digdag.client.api.RestSecretList;
 import io.digdag.client.api.RestSession;
 import io.digdag.client.api.RestSessionAttempt;
 import io.digdag.client.api.RestSessionAttemptRequest;
+import io.digdag.client.api.RestSetSecretRequest;
 import io.digdag.client.api.RestTask;
 import io.digdag.client.api.RestWorkflowDefinition;
 import io.digdag.client.api.RestWorkflowSessionTime;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static io.digdag.client.api.RestSetSecretRequest.isAscii;
 import static java.util.Locale.ENGLISH;
 
 public class DigdagClient implements AutoCloseable
@@ -546,7 +548,7 @@ public class DigdagClient implements AutoCloseable
                 .resolveTemplate("key", key)
                 .request()
                 .headers(headers.get())
-                .put(Entity.entity(value, "text/plain"));
+                .put(Entity.entity(RestSetSecretRequest.of(value), "application/json"));
         if (response.getStatusInfo().getFamily() != Response.Status.Family.SUCCESSFUL) {
             // TODO: appropriate exception type
             throw new RuntimeException("Failed to set project secret: " + response.getStatusInfo());
@@ -632,16 +634,5 @@ public class DigdagClient implements AutoCloseable
         return target.request("application/json")
             .headers(headers.get())
             .delete(type);
-    }
-
-    private static boolean isAscii(String s)
-    {
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c > 127) {
-                return false;
-            }
-        }
-        return true;
     }
 }
