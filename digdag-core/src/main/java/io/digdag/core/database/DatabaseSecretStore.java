@@ -7,9 +7,14 @@ import io.digdag.spi.SecretAccessDeniedException;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 import org.skife.jdbi.v2.DBI;
+import org.skife.jdbi.v2.ResultSetMapperFactory;
+import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
+import org.skife.jdbi.v2.tweak.ResultSetMapper;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +36,7 @@ class DatabaseSecretStore
         super(config.getType(), Dao.class, dbi);
         this.siteId = siteId;
         this.crypto = crypto;
+        dbi.registerMapper(new ScopedSecretMapper());
     }
 
     @Override
@@ -70,6 +76,17 @@ class DatabaseSecretStore
         {
             this.scope = scope;
             this.value = value;
+        }
+    }
+
+    private class ScopedSecretMapper
+            implements ResultSetMapper<ScopedSecret> {
+
+        @Override
+        public ScopedSecret map(int index, ResultSet r, StatementContext ctx)
+                throws SQLException
+        {
+            return new ScopedSecret(r.getString("scope"), r.getString("value"));
         }
     }
 }
