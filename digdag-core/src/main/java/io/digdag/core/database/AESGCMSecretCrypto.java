@@ -26,6 +26,8 @@ import static javax.crypto.Cipher.ENCRYPT_MODE;
 
 public class AESGCMSecretCrypto implements SecretCrypto
 {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private final SecretKey sharedSecret;
 
     private static final int AES_KEY_SIZE = 128;
@@ -174,8 +176,11 @@ public class AESGCMSecretCrypto implements SecretCrypto
 
     private byte[] generateNonce()
     {
+        // The nonce need not be random, just unique. It is simply convenient to rely on
+        // SecureRandom (/dev/urandom) to give us a value which is very likely to (although
+        // of course not guaranteed) be unique.
         byte[] nonce = new byte[GCM_NONCE_LENGTH];
-        new SecureRandom().nextBytes(nonce);
+        SECURE_RANDOM.nextBytes(nonce);
         return nonce;
     }
 }
