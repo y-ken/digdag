@@ -7,7 +7,6 @@ import io.digdag.spi.SecretAccessDeniedException;
 import io.digdag.spi.SecretScopes;
 import io.digdag.spi.SecretStore;
 import org.skife.jdbi.v2.DBI;
-import org.skife.jdbi.v2.ResultSetMapperFactory;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
@@ -25,7 +24,7 @@ class DatabaseSecretStore
 {
     private static final Map<String, Integer> PRIORITIES = ImmutableMap.of(
             SecretScopes.PROJECT, 0,
-            SecretScopes.USER_DEFAULT, 1);
+            SecretScopes.PROJECT_DEFAULT, 1);
 
     private final int siteId;
 

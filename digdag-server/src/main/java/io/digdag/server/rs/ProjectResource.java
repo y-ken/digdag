@@ -461,7 +461,7 @@ public class ProjectResource
                         SecretControlStore secretControlStore = scsp.getSecretControlStore(getSiteId());
                         Map<String, String> secrets = getSecrets();
                         if (secrets != null) {
-                            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(storedProject.getId(), SecretScopes.USER_DEFAULT, k, v));
+                            secrets.forEach((k, v) -> secretControlStore.setProjectSecret(storedProject.getId(), SecretScopes.PROJECT_DEFAULT, k, v));
                         }
 
                         return RestModels.project(storedProject, rev);
