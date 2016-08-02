@@ -115,7 +115,7 @@ public class SecretsIT
             CommandStatus setStatus = main("secrets",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    projectName,
+                    "--project", projectName,
                     "--set",
                     key1 + '=' + value1,
                     key2 + '=' + value2,
@@ -131,7 +131,7 @@ public class SecretsIT
                     "secrets",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    projectName,
+                    "--project", projectName,
                     "--set",
                     key4 + "=-");
             assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
@@ -151,7 +151,7 @@ public class SecretsIT
                     "secrets",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    projectName,
+                    "--project", projectName,
                     "--set", "@-");
             assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
         }
@@ -166,7 +166,7 @@ public class SecretsIT
                     "secrets",
                     "-c", config.toString(),
                     "-e", server.endpoint(),
-                    projectName,
+                    "--project", projectName,
                     "--set", "@" + secretsFileYaml);
             assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
         }
@@ -175,7 +175,7 @@ public class SecretsIT
         CommandStatus listStatus = main("secrets",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                projectName);
+                "--project", projectName);
         assertThat(listStatus.errUtf8(), listStatus.code(), is(0));
 
         List<String> listedKeys = CharSource.wrap(listStatus.outUtf8()).readLines();
@@ -250,7 +250,7 @@ public class SecretsIT
         CommandStatus setStatus = main("secrets",
                 "-c", config.toString(),
                 "-e", server.endpoint(),
-                projectName,
+                "--project", projectName,
                 "--set", key1 + '=' + value1, key2 + '=' + value2);
         assertThat(setStatus.errUtf8(), setStatus.code(), is(0));
 
