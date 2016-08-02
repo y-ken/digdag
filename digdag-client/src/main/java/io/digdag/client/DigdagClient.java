@@ -59,6 +59,11 @@ public class DigdagClient implements AutoCloseable
         private final Map<String, String> baseHeaders = new HashMap<>();
         private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
 
+        public Optional<String> host()
+        {
+            return Optional.fromNullable(host);
+        }
+
         public Builder host(String host)
         {
             this.host = host;

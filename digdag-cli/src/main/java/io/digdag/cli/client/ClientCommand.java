@@ -8,30 +8,19 @@ import io.digdag.cli.SystemExitException;
 import io.digdag.cli.YamlMapper;
 import io.digdag.client.DigdagClient;
 import io.digdag.core.Version;
+import io.digdag.spi.ClientConfigurator;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
 import static io.digdag.cli.SystemExitException.systemExit;
-import static java.util.Locale.ENGLISH;
 
 public abstract class ClientCommand
         extends Command
@@ -100,9 +89,55 @@ public abstract class ClientCommand
         Properties props = loadSystemProperties();
 
         if (endpoint == null) {
-            endpoint = props.getProperty("client.http.endpoint", DEFAULT_ENDPOINT);
+            endpoint = props.getProperty("client.http.endpoint");
         }
 
+        DigdagClient.Builder builder = DigdagClient.builder();
+
+        if (endpoint != null) {
+            configureEndpoint(builder, endpoint);
+        }
+
+        builder.headers(this.httpHeaders);
+        for (String key : props.stringPropertyNames()) {
+            if (key.startsWith("client.http.headers.")) {
+                builder.header(key.substring("client.http.headers.".length()), props.getProperty(key));
+            }
+        }
+
+        ClientConfigurator configurator = new TDDigdagClientConfigurator();
+        configurator.configureClient(builder);
+
+        if (!builder.host().isPresent()) {
+            configureEndpoint(builder, DEFAULT_ENDPOINT);
+        }
+
+        DigdagClient client = builder.build();
+
+        if (!disableVersionCheck) {
+            disableVersionCheck = props.getProperty("client.disable-version-check", "false").equalsIgnoreCase("true");
+        }
+
+        if (checkServerVersion && !disableVersionCheck) {
+            Map<String, Object> remoteVersions = client.getVersion();
+            String remoteVersion = String.valueOf(remoteVersions.getOrDefault("version", ""));
+
+            if (!localVersion.version().equals(remoteVersion)) {
+                throw systemExit(String.format(""
+                                + "Client and server version mismatch: Client: %s, Server: %s.%n"
+                                + "Please run following command locally to download a compatible version with the server:%n"
+                                + "%n"
+                                + "    digdag selfupdate %s%n",
+                        localVersion, remoteVersion, remoteVersion));
+            }
+        }
+
+        return client;
+    }
+
+    private void configureEndpoint(DigdagClient.Builder builder, String endpoint)
+            throws SystemExitException
+    {
         String[] fragments = endpoint.split(":", 2);
 
         boolean useSsl = false;
@@ -132,36 +167,9 @@ public abstract class ClientCommand
             port = Integer.parseInt(fragments[1]);
         }
 
-        Map<String, String> headers = new HashMap<>();
-        for (String key : props.stringPropertyNames()) {
-            if (key.startsWith("client.http.headers.")) {
-                headers.put(key.substring("client.http.headers.".length()), props.getProperty(key));
-            }
-        }
-        headers.putAll(this.httpHeaders);
-
-        DigdagClient client = DigdagClient.builder()
-                .host(host)
-                .port(port)
-                .ssl(useSsl)
-                .headers(headers)
-                .build();
-
-        if (checkServerVersion && !disableVersionCheck) {
-            Map<String, Object> remoteVersions = client.getVersion();
-            String remoteVersion = String.valueOf(remoteVersions.getOrDefault("version", ""));
-
-            if (!localVersion.version().equals(remoteVersion)) {
-                throw systemExit(String.format(""
-                                + "Client and server version mismatch: Client: %s, Server: %s.%n"
-                                + "Please run following command locally to download a compatible version with the server:%n"
-                                + "%n"
-                                + "    digdag selfupdate %s%n",
-                        localVersion, remoteVersion, remoteVersion));
-            }
-        }
-
-        return client;
+        builder.host(host);
+        builder.port(port);
+        builder.ssl(useSsl);
     }
 
     public void showCommonOptions()
