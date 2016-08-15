@@ -8,6 +8,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.common.collect.ImmutableMap;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Delete;
@@ -45,12 +46,18 @@ public class Main
     private final io.digdag.core.Version version;
     private final PrintStream out;
     private final PrintStream err;
+    private final Map<String, String> env;
 
-    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err)
+    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err) {
+        this(version, out, err, ImmutableMap.copyOf(System.getenv()));
+    }
+
+    public Main(io.digdag.core.Version version, PrintStream out, PrintStream err, Map<String, String> env)
     {
         this.version = version;
         this.out = out;
         this.err = err;
+        this.env = env;
     }
 
     public static class MainOptions
@@ -81,33 +88,33 @@ public class Main
         JCommander jc = new JCommander(mainOpts);
         jc.setProgramName(PROGRAM_NAME);
 
-        jc.addCommand("init", new Init(out, err), "new");
-        jc.addCommand("run", new Run(out, err), "r");
-        jc.addCommand("check", new Check(out, err), "c");
-        jc.addCommand("scheduler", new Sched(version, out, err), "sched");
+        jc.addCommand("init", new Init(env, out, err), "new");
+        jc.addCommand("run", new Run(env, out, err), "r");
+        jc.addCommand("check", new Check(env, out, err), "c");
+        jc.addCommand("scheduler", new Sched(version, env, out, err), "sched");
 
-        jc.addCommand("server", new Server(version, out, err));
+        jc.addCommand("server", new Server(version, env, out, err));
 
-        jc.addCommand("push", new Push(version, out, err));
-        jc.addCommand("archive", new Archive(out, err));
-        jc.addCommand("upload", new Upload(version, out, err));
+        jc.addCommand("push", new Push(version, env, out, err));
+        jc.addCommand("archive", new Archive(env, out, err));
+        jc.addCommand("upload", new Upload(version, env, out, err));
 
-        jc.addCommand("workflow", new ShowWorkflow(version, out, err), "workflows");
-        jc.addCommand("start", new Start(version, out, err));
-        jc.addCommand("retry", new Retry(version, out, err));
-        jc.addCommand("session", new ShowSession(version, out, err), "sessions");
-        jc.addCommand("attempts", new ShowAttempts(version, out, err));
-        jc.addCommand("attempt", new ShowAttempt(version, out, err));
-        jc.addCommand("reschedule", new Reschedule(version, out, err));
-        jc.addCommand("backfill", new Backfill(version, out, err));
-        jc.addCommand("log", new ShowLog(version, out, err), "logs");
-        jc.addCommand("kill", new Kill(version, out, err));
-        jc.addCommand("task", new ShowTask(version, out, err), "tasks");
-        jc.addCommand("schedule", new ShowSchedule(version, out, err), "schedules");
-        jc.addCommand("delete", new Delete(version, out, err));
-        jc.addCommand("version", new Version(version, out, err), "version");
+        jc.addCommand("workflow", new ShowWorkflow(version, env, out, err), "workflows");
+        jc.addCommand("start", new Start(version, env, out, err));
+        jc.addCommand("retry", new Retry(version, env, out, err));
+        jc.addCommand("session", new ShowSession(version, env, out, err), "sessions");
+        jc.addCommand("attempts", new ShowAttempts(version, env, out, err));
+        jc.addCommand("attempt", new ShowAttempt(version, env, out, err));
+        jc.addCommand("reschedule", new Reschedule(version, env, out, err));
+        jc.addCommand("backfill", new Backfill(version, env, out, err));
+        jc.addCommand("log", new ShowLog(version, env, out, err), "logs");
+        jc.addCommand("kill", new Kill(version, env, out, err));
+        jc.addCommand("task", new ShowTask(version, env, out, err), "tasks");
+        jc.addCommand("schedule", new ShowSchedule(version, env, out, err), "schedules");
+        jc.addCommand("delete", new Delete(env, version, out, err));
+        jc.addCommand("version", new Version(version, env, out, err), "version");
 
-        jc.addCommand("selfupdate", new SelfUpdate(out, err));
+        jc.addCommand("selfupdate", new SelfUpdate(env, out, err));
 
         try {
             try {

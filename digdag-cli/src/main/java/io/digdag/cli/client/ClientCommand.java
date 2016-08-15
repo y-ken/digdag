@@ -20,6 +20,8 @@ import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -45,9 +47,12 @@ public abstract class ClientCommand
     @Parameter(names = {"--disable-version-check"})
     protected boolean disableVersionCheck;
 
-    public ClientCommand(Version localVersion, PrintStream out, PrintStream err)
+    @Parameter(names = {"--disable-cert-validation"})
+    protected boolean disableCertValidation;
+
+    public ClientCommand(Map<String, String> env, Version localVersion, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
         this.localVersion = Objects.requireNonNull(localVersion, "localVersion");
     }
 
@@ -125,7 +130,8 @@ public abstract class ClientCommand
         }
         else {
             host = fragments[0];
-            port = Integer.parseInt(fragments[1]);
+            String portString = fragments[1].split("/", 2)[0];
+            port = Integer.parseInt(portString);
         }
 
         Map<String, String> headers = new HashMap<>();
@@ -136,7 +142,8 @@ public abstract class ClientCommand
         }
         headers.putAll(this.httpHeaders);
 
-        logger.debug("Using endpoint {}://{}:{}", useSsl ? "https" : "http", host, port);
+        String scheme = useSsl ? "https" : "http";
+        logger.debug("Using endpoint {}://{}:{}", scheme, host, port);
 
         DigdagClient.Builder builder = DigdagClient.builder()
                 .host(host)
@@ -144,7 +151,11 @@ public abstract class ClientCommand
                 .ssl(useSsl)
                 .headers(headers);
 
-        Optional<ProxyConfig> proxyConfig = Proxies.httpsProxyConfigFromEnv(System.getenv());
+        if (disableCertValidation) {
+            builder.disableCertValidation(true);
+        }
+
+        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(scheme, env);
         if (proxyConfig.isPresent()) {
             ProxyConfig cfg = proxyConfig.get();
             if (cfg.getUser().isPresent() || cfg.getPassword().isPresent()) {

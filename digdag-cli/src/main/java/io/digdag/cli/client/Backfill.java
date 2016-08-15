@@ -2,6 +2,7 @@ package io.digdag.cli.client;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.time.Instant;
 
@@ -39,9 +40,9 @@ public class Backfill
     @Parameter(names = {"-d", "--dry-run"})
     boolean dryRun = false;
 
-    public Backfill(Version version, PrintStream out, PrintStream err)
+    public Backfill(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(env, version, out, err);
     }
 
     @Override

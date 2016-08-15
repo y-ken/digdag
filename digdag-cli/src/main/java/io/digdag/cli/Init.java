@@ -10,7 +10,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.IOException;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import io.digdag.client.config.ConfigFactory;
 import io.digdag.core.repository.WorkflowDefinition;
@@ -22,9 +21,9 @@ import static io.digdag.cli.SystemExitException.systemExit;
 public class Init
     extends Command
 {
-    public Init(PrintStream out, PrintStream err)
+    public Init(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override

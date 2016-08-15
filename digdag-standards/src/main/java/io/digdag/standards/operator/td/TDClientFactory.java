@@ -25,13 +25,16 @@ class TDClientFactory
 
         TDClientBuilder builder = TDClient.newBuilder(false);
 
+        boolean useSSL = params.get("use_ssl", boolean.class, true);
+        String scheme = useSSL ? "https" : "http";
+
         Config proxyConfig = params.getNestedOrGetEmpty("proxy");
         boolean proxyEnabled = proxyConfig.get("enabled", Boolean.class, false);
         if (proxyEnabled) {
             builder.setProxy(proxyConfig(proxyConfig));
         }
         else {
-            Optional<ProxyConfig> config = Proxies.httpsProxyConfigFromEnv(env);
+            Optional<ProxyConfig> config = Proxies.proxyConfigFromEnv(scheme, env);
             if (config.isPresent()) {
                 builder.setProxy(config.get());
             }
@@ -39,7 +42,7 @@ class TDClientFactory
 
         return builder
                 .setEndpoint(params.get("endpoint", String.class, "api.treasuredata.com"))
-                .setUseSSL(params.get("use_ssl", boolean.class, true))
+                .setUseSSL(useSSL)
                 .setApiKey(apikey)
                 .setRetryLimit(0)  // disable td-client's retry mechanism
                 ;

@@ -3,6 +3,8 @@ package io.digdag.cli.client;
 import java.io.PrintStream;
 import java.util.List;
 import java.io.IOException;
+import java.util.Map;
+
 import com.google.common.base.Optional;
 import com.beust.jcommander.Parameter;
 import io.digdag.cli.SystemExitException;
@@ -24,9 +26,9 @@ public class ShowLog
     @Parameter(names = {"-f", "--follow"})
     protected boolean follow = false;
 
-    public ShowLog(Version version, PrintStream out, PrintStream err)
+    public ShowLog(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(env, version, out, err);
     }
 
     @Override

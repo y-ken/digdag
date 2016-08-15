@@ -50,9 +50,9 @@ public class Push
     @Parameter(names = {"--schedule-from"})
     String scheduleFromString = null;
 
-    public Push(Version version, PrintStream out, PrintStream err)
+    public Push(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(env, version, out, err);
     }
 
     @Override

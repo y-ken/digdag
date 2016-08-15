@@ -20,7 +20,6 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Assert;
 import org.subethamail.wiser.Wiser;
-import utils.NopDispatcher;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -72,6 +71,13 @@ public class TestUtils
         return main(buildVersion(), args);
     }
 
+    public static CommandStatus main(Map<String, String> env, String... args)
+    {
+        final ByteArrayOutputStream out = new ByteArrayOutputStream();
+        final ByteArrayOutputStream err = new ByteArrayOutputStream();
+        return main(env, buildVersion(), asList(args), out, err);
+    }
+
     public static CommandStatus main(Collection<String> args)
     {
         return main(buildVersion(), args);
@@ -89,14 +95,18 @@ public class TestUtils
         return main(localVersion, args, out, err);
     }
 
-    public static CommandStatus main(Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err)
+    public static CommandStatus main(Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err) {
+        return main(ImmutableMap.of(), localVersion, args, out, err);
+    }
+
+    public static CommandStatus main(Map<String, String> env, Version localVersion, Collection<String> args, ByteArrayOutputStream out, ByteArrayOutputStream err)
     {
         final int code;
         try (
                 PrintStream outp = new PrintStream(out, true, "UTF-8");
                 PrintStream errp = new PrintStream(err, true, "UTF-8");
         ) {
-            code = new Main(localVersion, outp, errp).cli(args.stream().toArray(String[]::new));
+            code = new Main(localVersion, outp, errp, env).cli(args.stream().toArray(String[]::new));
         }
         catch (RuntimeException | UnsupportedEncodingException e) {
             e.printStackTrace();

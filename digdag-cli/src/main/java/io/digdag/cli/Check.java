@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 
@@ -58,9 +57,9 @@ public class Check
     //@Parameter(names = {"-G", "--graph"})
     //String visualizePath = null;
 
-    public Check(PrintStream out, PrintStream err)
+    public Check(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override

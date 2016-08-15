@@ -1,8 +1,8 @@
 package io.digdag.client;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Optional;
@@ -24,10 +24,7 @@ import io.digdag.client.api.RestWorkflowSessionTime;
 import io.digdag.client.api.SessionTimeTruncate;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigFactory;
-import org.jboss.resteasy.client.jaxrs.ClientHttpEngine;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
-import org.jboss.resteasy.client.jaxrs.engines.ApacheHttpClient4Engine;
 
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.Client;
@@ -64,6 +61,7 @@ public class DigdagClient implements AutoCloseable
         private String proxyScheme = null;
         private final Map<String, String> baseHeaders = new HashMap<>();
         private Function<Map<String, String>, Map<String, String>> headerBuilder = null;
+        private boolean disableCertValidation;
 
         public Builder host(String host)
         {
@@ -116,6 +114,12 @@ public class DigdagClient implements AutoCloseable
         public Builder headerBuilder(Function<Map<String, String>, Map<String, String>> headerBuilder)
         {
             this.headerBuilder = headerBuilder;
+            return this;
+        }
+
+        public Builder disableCertValidation(boolean value)
+        {
+            this.disableCertValidation = value;
             return this;
         }
 
@@ -202,6 +206,10 @@ public class DigdagClient implements AutoCloseable
                     clientBuilder.defaultProxy(builder.proxyHost, builder.proxyPort, builder.proxyScheme);
                 }
             }
+        }
+
+        if (builder.disableCertValidation) {
+            clientBuilder.disableTrustManager();
         }
 
         this.client = clientBuilder.build();
@@ -586,8 +594,7 @@ public class DigdagClient implements AutoCloseable
 
     public Map<String, Object> getVersion()
     {
-        return doGet(new GenericType<Map<String, Object>>() {},
-                target("/api/version"));
+        return doGet(new GenericType<Map<String, Object>>() {}, target("/api/version"));
     }
 
     private WebTarget target(String path)

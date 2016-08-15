@@ -34,7 +34,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
@@ -73,7 +72,6 @@ import io.digdag.core.workflow.TaskMatchPattern;
 import io.digdag.core.config.ConfigLoaderManager;
 import io.digdag.spi.TaskRequest;
 import io.digdag.spi.TaskResult;
-import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.ScheduleTime;
 import io.digdag.spi.Scheduler;
 import io.digdag.client.config.Config;
@@ -135,9 +133,9 @@ public class Run
 
     private Path resumeStatePath;
 
-    public Run(PrintStream out, PrintStream err)
+    public Run(Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(out, err);
+        super(env, out, err);
     }
 
     @Override

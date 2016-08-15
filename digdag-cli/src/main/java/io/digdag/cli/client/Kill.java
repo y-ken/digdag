@@ -6,15 +6,16 @@ import io.digdag.core.*;
 import io.digdag.core.Version;
 
 import java.io.PrintStream;
+import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
 public class Kill
     extends ClientCommand
 {
-    public Kill(Version version, PrintStream out, PrintStream err)
+    public Kill(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(env, version, out, err);
     }
 
     @Override

@@ -19,7 +19,7 @@ public class Proxies
     private static final Logger logger = LoggerFactory.getLogger(Proxies.class);
 
     @VisibleForTesting
-    public static Optional<ProxyConfig> httpsProxyConfigFromEnv(Map<String, String> env)
+    public static Optional<ProxyConfig> proxyConfigFromEnv(String scheme, Map<String, String> env)
     {
         // Configuring http proxying using environment variables is not really standardized and
         // the actual use and interpretation of the environment variables vary from tool to tool.
@@ -28,11 +28,21 @@ public class Proxies
 
         // We choose to be maximally lenient and respect all of the above in a hopefully sane order of preference.
 
-        List<String> proxyEnvVarNames = ImmutableList.of("https_proxy", "HTTPS_PROXY", "http_proxy", "HTTP_PROXY");
+        List<String> preference;
+        switch (scheme) {
+            case "http":
+                preference = ImmutableList.of("http_proxy", "HTTP_PROXY");
+                break;
+            case "https":
+                preference = ImmutableList.of("https_proxy", "HTTPS_PROXY", "http_proxy", "HTTP_PROXY");
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported scheme: " + scheme);
+        }
 
         String proxyEnvVarName = null;
         String var = null;
-        for (String name : proxyEnvVarNames) {
+        for (String name : preference) {
             var = env.getOrDefault(name, "").trim();
             if (!var.isEmpty()) {
                 proxyEnvVarName = name;

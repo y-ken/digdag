@@ -13,6 +13,7 @@ import io.digdag.core.Version;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 
 import static io.digdag.cli.SystemExitException.systemExit;
 
@@ -22,9 +23,9 @@ public class ShowSession
     @Parameter(names = {"-i", "--last-id"})
     Long lastId = null;
 
-    public ShowSession(Version version, PrintStream out, PrintStream err)
+    public ShowSession(Version version, Map<String, String> env, PrintStream out, PrintStream err)
     {
-        super(version, out, err);
+        super(env, version, out, err);
     }
 
     @Override
