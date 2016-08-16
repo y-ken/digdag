@@ -75,7 +75,7 @@ public class Sched
         err.println("    -p, --param KEY=VALUE            overwrites a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       reads parameters from a YAML file");
         err.println("    -c, --config PATH.properties     server configuration property path");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

@@ -7,6 +7,7 @@ import com.treasuredata.client.model.TDJobRequestBuilder;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
 import io.digdag.client.config.ConfigException;
+import io.digdag.core.Environment;
 import io.digdag.spi.Operator;
 import io.digdag.spi.OperatorFactory;
 import io.digdag.spi.TaskExecutionException;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.util.Map;
 
 public class TdWaitTableOperatorFactory
         extends AbstractWaitOperatorFactory
@@ -31,11 +33,13 @@ public class TdWaitTableOperatorFactory
 
     private static final String TABLE_EXISTS = "table_exists";
     private static final String POLL_JOB = "pollJob";
+    private final Map<String, String> env;
 
     @Inject
-    public TdWaitTableOperatorFactory(Config systemConfig)
+    public TdWaitTableOperatorFactory(Config systemConfig, @Environment Map<String, String> env)
     {
         super(systemConfig);
+        this.env = env;
     }
 
     public String getType()
@@ -84,7 +88,7 @@ public class TdWaitTableOperatorFactory
         @Override
         public TaskResult runTask()
         {
-            try (TDOperator op = TDOperator.fromConfig(params)) {
+            try (TDOperator op = TDOperator.fromConfig(params, env)) {
 
                 // Check if table exists using rest api
                 if (!state.get(TABLE_EXISTS, Boolean.class, false)) {

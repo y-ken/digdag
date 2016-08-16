@@ -50,7 +50,7 @@ public class Proxies
             }
         }
 
-        if (var == null) {
+        if (proxyEnvVarName == null) {
             return Optional.absent();
         }
 

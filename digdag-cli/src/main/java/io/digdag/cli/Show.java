@@ -45,7 +45,7 @@ public class Show
         err.println("Usage: digdag show <digdag.dig> [options...]");
         err.println("  Options:");
         err.println("    -s, --show PATH.png              store a PNG file to this path (default: digdag.png)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

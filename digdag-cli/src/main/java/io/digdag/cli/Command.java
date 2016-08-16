@@ -69,7 +69,7 @@ public abstract class Command
         } else {
             // If no configuration file was specified, load the default configuration, if it exists.
             try {
-                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath());
+                props = PropertyUtils.loadFile(ConfigUtil.defaultConfigPath(env));
             }
             catch (NoSuchFileException ex) {
                 log.trace("configuration file not found: {}", configPath, ex);
@@ -91,7 +91,7 @@ public abstract class Command
         String localPath = systemProps.getProperty("system-plugin.local-path", "");
         Path localRepositoryPath;
         if (localPath.equals("")) {
-            localRepositoryPath = ConfigUtil.defaultLocalPluginPath();
+            localRepositoryPath = ConfigUtil.defaultLocalPluginPath(env);
         }
         else {
             localRepositoryPath = Paths.get(localPath);

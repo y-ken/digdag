@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
@@ -73,9 +74,14 @@ public class TestUtils
 
     public static CommandStatus main(Map<String, String> env, String... args)
     {
+        return main(env, ImmutableList.copyOf(args));
+    }
+
+    public static CommandStatus main(Map<String, String> env, Collection<String> args)
+    {
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         final ByteArrayOutputStream err = new ByteArrayOutputStream();
-        return main(env, buildVersion(), asList(args), out, err);
+        return main(env, buildVersion(), args, out, err);
     }
 
     public static CommandStatus main(Collection<String> args)

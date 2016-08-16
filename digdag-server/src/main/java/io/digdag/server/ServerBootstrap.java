@@ -86,8 +86,14 @@ public class ServerBootstrap
 
         // GuiceRsServletContainerInitializer closes Digdag (through Injector implementing AutoCloseable)
         // when servlet context is destroyed.
-        DigdagEmbed digdag = bootstrap(new DigdagEmbed.Bootstrap(), serverConfig, version)
-            .initialize();
+        DigdagEmbed digdag = null;
+        try {
+            digdag = bootstrap(new DigdagEmbed.Bootstrap(), serverConfig, version)
+                .initialize();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
 
         Injector injector = digdag.getInjector();
 
@@ -114,6 +120,7 @@ public class ServerBootstrap
     protected DigdagEmbed.Bootstrap bootstrap(DigdagEmbed.Bootstrap bootstrap, ServerConfig serverConfig, Version version)
     {
         return bootstrap
+            .setEnvironment(serverConfig.getEnvironment())
             .setSystemConfig(serverConfig.getSystemConfig())
             //.setSystemPlugins(loadSystemPlugins(serverConfig.getSystemConfig()))
             .overrideModulesWith((binder) -> {

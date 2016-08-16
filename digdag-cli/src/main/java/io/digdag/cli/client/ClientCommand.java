@@ -20,8 +20,6 @@ import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -188,7 +186,7 @@ public abstract class ClientCommand
     public void showCommonOptions()
     {
         err.println("    -e, --endpoint HOST[:PORT]       HTTP endpoint (default: http://127.0.0.1:65432)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
     }
 
     protected long parseLongOrUsage(String arg)

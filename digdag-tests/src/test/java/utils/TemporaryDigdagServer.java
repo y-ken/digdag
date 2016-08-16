@@ -3,6 +3,7 @@ package utils;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.digdag.cli.Main;
 import io.digdag.client.DigdagClient;
@@ -42,7 +43,9 @@ import java.sql.SQLException;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
@@ -61,7 +64,7 @@ import static org.junit.Assert.fail;
 import static utils.TestUtils.objectMapper;
 
 public class TemporaryDigdagServer
-        implements TestRule
+        implements TestRule, AutoCloseable
 {
     private static final boolean IN_PROCESS_DEFAULT = Boolean.valueOf(System.getenv().getOrDefault("DIGDAG_TEST_TEMP_SERVER_IN_PROCESS", "true"));
 
@@ -72,6 +75,7 @@ public class TemporaryDigdagServer
     private static final ThreadFactory DAEMON_THREAD_FACTORY = new ThreadFactoryBuilder().setDaemon(true).build();
 
     private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
     private final Optional<Version> version;
 
     private final String host;
@@ -84,6 +88,7 @@ public class TemporaryDigdagServer
     private final ByteArrayOutputStream err = new ByteArrayOutputStream();
 
     private final boolean inProcess;
+    private final Map<String, String> environment;
 
     private Path workdir;
     private Process serverProcess;
@@ -99,6 +104,9 @@ public class TemporaryDigdagServer
 
     private int port = -1;
 
+    private boolean started;
+    private boolean closed;
+
     public TemporaryDigdagServer(Builder builder)
     {
         this.version = builder.version;
@@ -107,6 +115,7 @@ public class TemporaryDigdagServer
         this.configuration = new ArrayList<>(Objects.requireNonNull(builder.configuration, "configuration"));
         this.extraArgs = ImmutableList.copyOf(Objects.requireNonNull(builder.args, "args"));
         this.inProcess = builder.inProcess;
+        this.environment = ImmutableMap.copyOf(builder.environment);
 
         this.executor = Executors.newCachedThreadPool(DAEMON_THREAD_FACTORY);
 
@@ -118,14 +127,6 @@ public class TemporaryDigdagServer
     @Override
     public Statement apply(Statement base, Description description)
     {
-        return RuleChain
-                .outerRule(temporaryFolder)
-                .around(this::statement)
-                .apply(base, description);
-    }
-
-    private Statement statement(Statement statement, Description description)
-    {
         return new Statement()
         {
             @Override
@@ -134,7 +135,7 @@ public class TemporaryDigdagServer
             {
                 before();
                 try {
-                    statement.evaluate();
+                    base.evaluate();
                 }
                 finally {
                     after();
@@ -238,6 +239,19 @@ public class TemporaryDigdagServer
     private void before()
             throws Throwable
     {
+        if (started) {
+            return;
+        }
+        start();
+    }
+
+    public void start()
+            throws Exception
+    {
+        started = true;
+
+        temporaryFolder.create();
+
         setupDatabase();
 
         Path runtimeInfoPath = temporaryFolder.newFolder().toPath().resolve("runtime-info");
@@ -268,14 +282,7 @@ public class TemporaryDigdagServer
         List<String> args = argsBuilder.build();
 
         if (inProcess) {
-            executor.execute(() -> {
-                if (version.isPresent()) {
-                    main(version.get(), args, out, err);
-                }
-                else {
-                    main(Version.buildVersion(), args, out, err);
-                }
-            });
+            executor.execute(() -> main(environment, version.or(Version.buildVersion()), args, out, err));
         }
         else {
             File workdir = temporaryFolder.newFolder();
@@ -295,6 +302,9 @@ public class TemporaryDigdagServer
             processArgs.addAll(args);
 
             ProcessBuilder processBuilder = new ProcessBuilder(processArgs);
+
+            processBuilder.environment().clear();
+            processBuilder.environment().putAll(environment);
 
             processBuilder.directory(workdir);
             serverProcess = processBuilder.start();
@@ -442,6 +452,17 @@ public class TemporaryDigdagServer
 
     private void after()
     {
+        if (!started || closed) {
+            return;
+        }
+        close();
+    }
+
+    @Override
+    public void close()
+    {
+        closed = true;
+
         if (serverProcess != null) {
             kill(serverProcess);
         }
@@ -465,6 +486,8 @@ public class TemporaryDigdagServer
                 log.debug("Failed to close db conn pool", e);
             }
         }
+
+        temporaryFolder.delete();
     }
 
     public static Builder builder()
@@ -529,6 +552,7 @@ public class TemporaryDigdagServer
         private List<String> args = new ArrayList<>();
         private Optional<Version> version = Optional.absent();
         private List<String> configuration = new ArrayList<>();
+        private Map<String, String> environment = new HashMap<>();
         private boolean inProcess = IN_PROCESS_DEFAULT;
 
         public Builder version(Version version)
@@ -545,6 +569,12 @@ public class TemporaryDigdagServer
         public Builder configuration(Collection<String> lines)
         {
             this.configuration.addAll(lines);
+            return this;
+        }
+
+        public Builder environment(Map<String, String> environment)
+        {
+            this.environment.putAll(environment);
             return this;
         }
 

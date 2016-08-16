@@ -8,7 +8,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.google.common.collect.ImmutableMap;
 import io.digdag.cli.client.Archive;
 import io.digdag.cli.client.Backfill;
 import io.digdag.cli.client.Delete;
@@ -33,11 +32,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static io.digdag.cli.SystemExitException.systemExit;
-
 import static io.digdag.cli.ConfigUtil.defaultConfigPath;
-import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
+import static io.digdag.cli.SystemExitException.systemExit;
 import static io.digdag.core.Version.buildVersion;
+import static io.digdag.core.agent.OperatorManager.formatExceptionMessage;
 
 public class Main
 {
@@ -49,7 +47,7 @@ public class Main
     private final Map<String, String> env;
 
     public Main(io.digdag.core.Version version, PrintStream out, PrintStream err) {
-        this(version, out, err, ImmutableMap.copyOf(System.getenv()));
+        this(version, out, err, System.getenv());
     }
 
     public Main(io.digdag.core.Version version, PrintStream out, PrintStream err, Map<String, String> env)
@@ -121,7 +119,7 @@ public class Main
                 jc.parse(args);
             }
             catch (MissingCommandException ex) {
-                throw usage(err, "available commands are: "+jc.getCommands().keySet());
+                throw usage("available commands are: "+jc.getCommands().keySet());
             }
             catch (ParameterException ex) {
                 if (getParsedCommand(jc) == null) {
@@ -133,15 +131,15 @@ public class Main
             }
 
             if (mainOpts.help) {
-                throw usage(err, null);
+                throw usage(null);
             }
 
             Command command = getParsedCommand(jc);
             if (command == null) {
-                throw usage(err, null);
+                throw usage(null);
             }
 
-            verbose = processCommonOptions(err, command);
+            verbose = processCommonOptions(command);
 
             command.main();
             return 0;
@@ -182,7 +180,7 @@ public class Main
         return (Command) jc.getCommands().get(commandName).getObjects().get(0);
     }
 
-    private static boolean processCommonOptions(PrintStream err, Command command)
+    private boolean processCommonOptions(Command command)
             throws SystemExitException
     {
         if (command.help) {
@@ -202,7 +200,7 @@ public class Main
             verbose = true;
             break;
         default:
-            throw usage(err, "Unknown log level '"+command.logLevel+"'");
+            throw usage("Unknown log level '"+command.logLevel+"'");
         }
 
         configureLogging(command.logLevel, command.logPath);
@@ -244,7 +242,7 @@ public class Main
     }
 
     // called also by Run
-    static SystemExitException usage(PrintStream err, String error)
+    private SystemExitException usage(String error)
     {
         err.println("Usage: digdag <command> [options...]");
         err.println("  Local-mode commands:");
@@ -279,7 +277,7 @@ public class Main
         err.println("    version                          show client and server version");
         err.println("");
         err.println("  Options:");
-        showCommonOptions(err);
+        showCommonOptions(env, err);
         if (error == null) {
             err.println("Use `<command> --help` to see detailed usage of a command.");
             return systemExit(null);
@@ -289,12 +287,12 @@ public class Main
         }
     }
 
-    public static void showCommonOptions(PrintStream err)
+    public static void showCommonOptions(Map<String, String> env, PrintStream err)
     {
         err.println("    -L, --log PATH                   output log messages to a file (default: -)");
         err.println("    -l, --log-level LEVEL            log level (error, warn, info, debug or trace)");
         err.println("    -X KEY=VALUE                     add a performance system config");
-        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath() + ")");
+        err.println("    -c, --config PATH.properties     Configuration file (default: " + defaultConfigPath(env) + ")");
         err.println("");
     }
 }

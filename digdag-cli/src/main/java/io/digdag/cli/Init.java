@@ -41,7 +41,7 @@ public class Init
     {
         err.println("Usage: digdag init <dir>");
         err.println("  Options:");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         err.println("  Example:");
         err.println("    $ digdag init mydag");
         return systemExit(error);

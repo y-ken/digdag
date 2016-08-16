@@ -53,7 +53,7 @@ public class SelfUpdate
     {
         err.println("Usage: digdag selfupdate [version]]");
         err.println("  Options:");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         err.println("");
         err.println("  Examples:");
         err.println("    $ digdag selfupdate");

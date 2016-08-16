@@ -48,9 +48,9 @@ class TDClientFactory
                 ;
     }
 
-    static TDClient clientFromConfig(Config params)
+    static TDClient clientFromConfig(Config params, Map<String, String> env)
     {
-        return clientBuilderFromConfig(params, System.getenv()).build();
+        return clientBuilderFromConfig(params, env).build();
     }
 
     private static ProxyConfig proxyConfig(Config config)

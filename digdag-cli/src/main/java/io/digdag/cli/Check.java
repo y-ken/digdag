@@ -86,7 +86,7 @@ public class Check
         err.println("    -p, --param KEY=VALUE            overwrite a parameter (use multiple times to set many parameters)");
         err.println("    -P, --params-file PATH.yml       read parameters from a YAML file");
         //err.println("    -g, --graph OUTPUT.png           visualize a task and exit");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 

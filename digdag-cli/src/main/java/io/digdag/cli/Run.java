@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+
+import io.digdag.client.DigdagClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.beust.jcommander.Parameter;
@@ -193,7 +195,7 @@ public class Run
         err.println("    -E, --show-params                show task parameters before running a task");
         err.println("        --session <daily | hourly | schedule | last | \"yyyy-MM-dd[ HH:mm:ss]\">  set session_time to this time");
         err.println("                                     (default: last, reuses the latest session time stored at .digdag/status)");
-        Main.showCommonOptions(err);
+        Main.showCommonOptions(env, err);
         return systemExit(error);
     }
 
@@ -214,9 +216,13 @@ public class Run
     {
         Properties systemProps = loadSystemProperties();
 
+        systemProps.setProperty("environment", DigdagClient.objectMapper().writeValueAsString(env));
+
         try (DigdagEmbed digdag = new DigdagEmbed.Bootstrap()
+                .setEnvironment(env)
                 .setSystemPlugins(loadSystemPlugins(systemProps))
                 .addModules(binder -> {
+//                    binder.bind(Map.class).annotatedWith(Environment.class).toInstance(env);
                     binder.bind(ResumeStateManager.class).in(Scopes.SINGLETON);
                     binder.bind(YamlMapper.class).in(Scopes.SINGLETON);  // used by ResumeStateManager
                     binder.bind(Run.class).toInstance(this);  // used by OperatorManagerWithSkip

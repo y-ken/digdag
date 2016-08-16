@@ -21,6 +21,7 @@ import io.digdag.util.RetryExecutor.RetryGiveupException;
 import org.immutables.value.Value;
 
 import java.io.Closeable;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.treasuredata.client.model.TDJob.Status.SUCCESS;
@@ -32,14 +33,14 @@ public class TDOperator
     private static final Integer INITIAL_POLL_INTERVAL = 1;
     private static final int MAX_POLL_INTERVAL = 30;
 
-    public static TDOperator fromConfig(Config config)
+    public static TDOperator fromConfig(Config config, Map<String, String> env)
     {
         String database = config.get("database", String.class).trim();
         if (database.isEmpty()) {
             throw new ConfigException("Parameter 'database' is empty");
         }
 
-        TDClient client = TDClientFactory.clientFromConfig(config);
+        TDClient client = TDClientFactory.clientFromConfig(config, env);
 
         return new TDOperator(client, database);
     }

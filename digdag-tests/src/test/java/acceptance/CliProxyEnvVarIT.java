@@ -27,9 +27,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static utils.TestUtils.main;
 
-public class ProxyEnvVarIT
+public class CliProxyEnvVarIT
 {
-    private static final Logger logger = LoggerFactory.getLogger(ProxyEnvVarIT.class);
+    private static final Logger logger = LoggerFactory.getLogger(CliProxyEnvVarIT.class);
 
     private static final MockResponse VERSION_RESPONSE = new MockResponse()
             .setBody("{\"version\":\"" + Version.buildVersion() + "\"}")
